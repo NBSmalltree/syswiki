@@ -82,6 +82,14 @@ public class SqlLibServiceImpl extends ServiceImpl<SysEncySqlLibMapper, SysEncyS
         return toVO(entity);
     }
 
+    @Override
+    public void deleteSql(String systemId, String sqlId) {
+        spaceService.validateSpaceExists(systemId);
+        SysEncySqlLib entity = getById(sqlId);
+        if (entity == null || !entity.getSystemId().equals(systemId)) throw new BizException(ErrorCode.NOT_FOUND, "SQL条目不存在");
+        removeById(sqlId);
+    }
+
     private SqlLibVO toVO(SysEncySqlLib e) {
         SqlLibVO vo = new SqlLibVO();
         vo.setSqlId(e.getSqlId());

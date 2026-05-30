@@ -24,6 +24,12 @@ public class SqlLibController {
     @PostMapping
     public Result<SqlLibVO> add(@PathVariable String systemId, @RequestBody @Valid SqlLibSaveDTO dto) { return Result.success(sqlLibService.addSql(systemId, dto)); }
 
+    @DeleteMapping("/{sqlId}")
+    public Result<Void> delete(@PathVariable String systemId, @PathVariable String sqlId) {
+        sqlLibService.deleteSql(systemId, sqlId);
+        return Result.success(null);
+    }
+
     @PostMapping("/{sqlId}/render")
     public Result<Map<String, String>> render(@PathVariable String systemId, @PathVariable String sqlId, @RequestBody SqlRenderRequest request) {
         String rendered = sqlLibService.renderSql(systemId, sqlId, request.getParams());

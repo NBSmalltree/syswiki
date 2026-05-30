@@ -12,4 +12,5 @@ public interface SqlLibService extends IService<SysEncySqlLib> {
     SqlLibVO addSql(String systemId, SqlLibSaveDTO dto);
     String renderSql(String systemId, String sqlId, Map<String, String> params);
     SqlLibVO getSqlDetail(String systemId, String sqlId);
+    void deleteSql(String systemId, String sqlId);
 }

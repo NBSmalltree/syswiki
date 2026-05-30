@@ -2,7 +2,6 @@
   <div>
     <div class="page-header">
       <h3>系统简介</h3>
-      <el-button type="primary" link @click="goEdit">编辑</el-button>
     </div>
     <el-card v-loading="loading">
       <MarkdownViewer v-if="content" :content="content" />
@@ -19,12 +18,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { getModuleContent } from '@/api/content'
 import MarkdownViewer from '@/components/common/MarkdownViewer.vue'
 
 const route = useRoute()
-const router = useRouter()
 const systemId = computed(() => route.params.systemId as string)
 const content = ref('')
 const techStack = ref<string[]>([])
@@ -45,6 +43,4 @@ onMounted(async () => {
   } catch { /* empty */ }
   loading.value = false
 })
-
-const goEdit = () => router.push(`/space/${systemId.value}/edit/INTRO`)
 </script>
