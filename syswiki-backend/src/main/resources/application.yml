@@ -1,0 +1,32 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /syswiki
+
+spring:
+  application:
+    name: syswiki-backend
+  profiles:
+    active: dev
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: none
+
+syswiki:
+  ai:
+    base-url: ${AI_BASE_URL:https://token-plan-cn.xiaomimimo.com/v1}
+    api-key: ${AI_API_KEY:tp-cslz3lhan1f6lr991b1xz42pzuiqspfv1tj1hxwq71hi0wuo}
+    flash-model: ${AI_FLASH_MODEL:mimo-v2.5-pro}
+    think-model: ${AI_THINK_MODEL:mimo-v2.5-pro}

@@ -1,0 +1,20 @@
+# Backend
+syswiki-backend/target/
+syswiki-backend/.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+*.war
+
+# Frontend
+syswiki-frontend/node_modules/
+syswiki-frontend/dist/
+syswiki-frontend/.vite/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Logs
+*.log
