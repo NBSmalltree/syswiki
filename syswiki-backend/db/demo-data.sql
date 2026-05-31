@@ -10,6 +10,7 @@ DELETE FROM sys_ency_content_version WHERE system_id IN ('SP20260530000001', 'SP
 DELETE FROM sys_ency_sql_lib WHERE system_id IN ('SP20260530000001', 'SP20260530000002');
 DELETE FROM sys_ency_topology WHERE system_id IN ('SP20260530000001', 'SP20260530000002');
 DELETE FROM sys_ency_content WHERE system_id IN ('SP20260530000001', 'SP20260530000002');
+DELETE FROM sys_system_member WHERE system_id IN ('SP20260530000001', 'SP20260530000002');
 DELETE FROM sys_ency_space WHERE system_id IN ('SP20260530000001', 'SP20260530000002');
 
 -- =============================================
@@ -17,8 +18,14 @@ DELETE FROM sys_ency_space WHERE system_id IN ('SP20260530000001', 'SP2026053000
 -- =============================================
 INSERT IGNORE INTO sys_ency_space (system_id, system_name, system_code, owner, description, status, create_time)
 VALUES
-('SP20260530000001', '超级网上银行系统', 'SIB', '张三', '超级网上银行核心渠道系统，承载个人网银、企业网银、手机银行等全渠道业务', 'ACTIVE', NOW()),
-('SP20260530000002', '跨境支付系统', 'CPS', '李四', '跨境支付核心处理系统，对接SWIFT、CIPS等国际清算通道', 'ACTIVE', NOW());
+('SP20260530000001', '超级网上银行系统', 'SIB', 'admin', '超级网上银行核心渠道系统，承载个人网银、企业网银、手机银行等全渠道业务', 'ACTIVE', NOW()),
+('SP20260530000002', '跨境支付系统', 'CPS', 'admin', '跨境支付核心处理系统，对接SWIFT、CIPS等国际清算通道', 'ACTIVE', NOW());
+
+-- 系统成员（admin 为两个系统的 OWNER）
+DELETE FROM sys_system_member WHERE system_id IN ('SP20260530000001', 'SP20260530000002');
+INSERT INTO sys_system_member (id, system_id, user_id, role, create_time) VALUES
+('SM20260530000001', 'SP20260530000001', 'U00000000000001', 'OWNER', NOW()),
+('SM20260530000002', 'SP20260530000002', 'U00000000000001', 'OWNER', NOW());
 
 -- =============================================
 -- 2. 百科内容 - 系统简介与技术栈 (INTRO)

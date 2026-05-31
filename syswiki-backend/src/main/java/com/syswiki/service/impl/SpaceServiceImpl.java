@@ -5,8 +5,12 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.syswiki.exception.BizException;
 import com.syswiki.exception.ErrorCode;
 import com.syswiki.mapper.SysEncySpaceMapper;
+import com.syswiki.mapper.SysSystemMemberMapper;
+import com.syswiki.mapper.SysUserMapper;
 import com.syswiki.model.dto.SpaceCreateDTO;
 import com.syswiki.model.entity.SysEncySpace;
+import com.syswiki.model.entity.SysSystemMember;
+import com.syswiki.model.entity.SysUser;
 import com.syswiki.model.vo.SpaceVO;
 import com.syswiki.service.SpaceService;
 import com.syswiki.util.IdGenerator;
@@ -20,6 +24,14 @@ import java.util.stream.Collectors;
 public class SpaceServiceImpl
     extends ServiceImpl<SysEncySpaceMapper, SysEncySpace>
     implements SpaceService {
+
+    private final SysSystemMemberMapper memberMapper;
+    private final SysUserMapper userMapper;
+
+    public SpaceServiceImpl(SysSystemMemberMapper memberMapper, SysUserMapper userMapper) {
+        this.memberMapper = memberMapper;
+        this.userMapper = userMapper;
+    }
 
     @Override
     public List<SpaceVO> listActiveSpaces() {
@@ -74,11 +86,46 @@ public class SpaceServiceImpl
         vo.setSystemId(e.getSystemId());
         vo.setSystemName(e.getSystemName());
         vo.setSystemCode(e.getSystemCode());
-        vo.setOwner(e.getOwner());
         vo.setDescription(e.getDescription());
         vo.setStatus(e.getStatus());
         vo.setCreateTime(e.getCreateTime());
         vo.setUpdateTime(e.getUpdateTime());
+
+        // 从 sys_system_member 查真正的 OWNER，显示其昵称
+        String ownerDisplay = resolveOwnerNickname(e.getSystemId());
+        vo.setOwner(ownerDisplay != null ? ownerDisplay : e.getOwner());
+
         return vo;
+    }
+
+    /**
+     * 查询系统的负责人显示名（多个EDITOR用顿号连接）
+     * 优先级：EDITOR成员 > ADMIN
+     */
+    private String resolveOwnerNickname(String systemId) {
+        LambdaQueryWrapper<SysSystemMember> w = new LambdaQueryWrapper<>();
+        w.eq(SysSystemMember::getSystemId, systemId);
+        List<SysSystemMember> members = memberMapper.selectList(w);
+        if (members == null || members.isEmpty()) return null;
+
+        // 收集所有 EDITOR 身份的成员昵称
+        java.util.List<String> editorNames = new java.util.ArrayList<>();
+        String adminName = null;
+
+        for (SysSystemMember m : members) {
+            SysUser user = userMapper.selectById(m.getUserId());
+            if (user == null) continue;
+            String name = user.getNickname() != null ? user.getNickname() : user.getUsername();
+            if ("ADMIN".equals(user.getRole())) {
+                adminName = name;
+            } else {
+                editorNames.add(name);
+            }
+        }
+
+        if (!editorNames.isEmpty()) {
+            return String.join("、", editorNames);
+        }
+        return adminName;
     }
 }
