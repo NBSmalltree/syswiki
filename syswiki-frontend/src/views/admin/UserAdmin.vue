@@ -76,7 +76,7 @@ const allSpaces = ref<any[]>([])
 const memberUserIds = ref<Set<string>>(new Set())
 
 const roleLabel = (role: string) => {
-  const map: Record<string, string> = { ADMIN: '管理员', EDITOR: '编辑者', VIEWER: '只读' }
+  const map: Record<string, string> = { ADMIN: '超级管理员', EDITOR: '系统管理员', VIEWER: '访客' }
   return map[role] || role
 }
 

@@ -5,32 +5,40 @@
   <el-container v-else class="app-layout">
     <el-header height="60px" class="app-header">
       <div class="header-left" @click="router.push('/portal')" style="cursor:pointer">
-        <h2 style="margin:0;color:#409eff">系统百科</h2>
+        <span class="logo-text">系统百科</span>
       </div>
       <div class="header-center">
-        <el-breadcrumb separator="/">
-          <el-breadcrumb-item :to="{ path: '/portal' }">门户</el-breadcrumb-item>
-          <el-breadcrumb-item v-if="spaceStore.currentSpace">
+        <el-breadcrumb separator-icon="ArrowRight" class="app-breadcrumb">
+          <el-breadcrumb-item :to="{ path: '/portal' }">
+            <el-icon style="margin-right:4px"><HomeFilled /></el-icon>门户
+          </el-breadcrumb-item>
+          <el-breadcrumb-item v-if="spaceStore.currentSystemName">
             {{ spaceStore.currentSystemName }}
           </el-breadcrumb-item>
         </el-breadcrumb>
       </div>
-      <div class="header-right" style="display:flex;align-items:center;gap:12px">
+      <div class="header-right">
         <template v-if="authStore.isLoggedIn">
-          <el-tag v-if="authStore.isAdmin" type="danger" size="small">管理员</el-tag>
-          <el-tag v-else-if="authStore.isEditor" type="primary" size="small">编辑者</el-tag>
-          <el-tag v-else type="info" size="small">只读</el-tag>
-          <el-dropdown @command="handleCommand">
-            <span style="cursor:pointer;display:flex;align-items:center;gap:4px">
+          <el-tag v-if="authStore.isAdmin" type="danger" size="small" effect="dark">超级管理员</el-tag>
+          <el-tag v-else-if="authStore.isEditor" type="primary" size="small" effect="dark">系统管理员</el-tag>
+          <el-tag v-else type="info" size="small" effect="dark">访客</el-tag>
+          <el-dropdown @command="handleCommand" trigger="click">
+            <span class="user-dropdown">
               <el-icon><User /></el-icon>
               {{ authStore.displayName }}
-              <el-icon><ArrowDown /></el-icon>
+              <el-icon class="el-icon--right"><ArrowDown /></el-icon>
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item v-if="authStore.isAdmin" command="users">用户管理</el-dropdown-item>
-                <el-dropdown-item v-if="!authStore.isAdmin && authStore.isEditor" command="members">成员管理</el-dropdown-item>
-                <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
+                <el-dropdown-item v-if="authStore.isAdmin" command="users">
+                  <el-icon><Setting /></el-icon>用户管理
+                </el-dropdown-item>
+                <el-dropdown-item v-if="!authStore.isAdmin && authStore.isEditor" command="members">
+                  <el-icon><UserFilled /></el-icon>成员管理
+                </el-dropdown-item>
+                <el-dropdown-item command="logout" divided>
+                  <el-icon><SwitchButton /></el-icon>退出登录
+                </el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -44,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSpaceStore } from '@/stores/space'
 import { useAuthStore } from '@/stores/auth'
@@ -55,6 +63,13 @@ const spaceStore = useSpaceStore()
 const authStore = useAuthStore()
 
 const isGuestRoute = computed(() => route.meta.guest === true)
+
+// 监听路由变化，离开系统空间时清空当前系统
+watch(() => route.path, (newPath) => {
+  if (!newPath.startsWith('/space/')) {
+    spaceStore.clearCurrentSpace()
+  }
+})
 
 const handleCommand = (cmd: string) => {
   if (cmd === 'logout') {
@@ -72,7 +87,25 @@ const handleCommand = (cmd: string) => {
 .app-layout { min-height: 100vh; }
 .app-header {
   display: flex; align-items: center; justify-content: space-between;
-  border-bottom: 1px solid #e4e7ed; background: #fff; padding: 0 20px;
+  border-bottom: 1px solid #dcdfe6; background: #fff; padding: 0 24px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
-.app-main { padding: 20px; background: #f5f7fa; min-height: calc(100vh - 60px); }
+.logo-text {
+  font-size: 20px; font-weight: 700; color: #409eff;
+  letter-spacing: 2px;
+}
+.app-breadcrumb {
+  font-size: 14px;
+}
+.header-right {
+  display: flex; align-items: center; gap: 14px;
+}
+.user-dropdown {
+  cursor: pointer; display: flex; align-items: center; gap: 4px;
+  font-size: 14px; color: #606266;
+}
+.user-dropdown:hover { color: #409eff; }
+.app-main {
+  padding: 20px; background: #f5f7fa; min-height: calc(100vh - 60px);
+}
 </style>

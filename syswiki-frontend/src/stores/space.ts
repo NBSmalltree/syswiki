@@ -27,5 +27,9 @@ export const useSpaceStore = defineStore('space', () => {
     } finally { loading.value = false }
   }
 
-  return { spaceList, currentSpace, loading, currentSystemId, currentSystemName, fetchSpaceList, fetchSpaceDetail }
+  function clearCurrentSpace() {
+    currentSpace.value = null
+  }
+
+  return { spaceList, currentSpace, loading, currentSystemId, currentSystemName, fetchSpaceList, fetchSpaceDetail, clearCurrentSpace }
 })
