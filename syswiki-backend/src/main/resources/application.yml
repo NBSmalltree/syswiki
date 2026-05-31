@@ -25,6 +25,9 @@ mybatis-plus:
       id-type: none
 
 syswiki:
+  jwt:
+    secret: ${JWT_SECRET:SysWikiSecretKey2026ForBankInternalUseMustBe256Bits!!}
+    expiration: 86400000
   ai:
     base-url: ${AI_BASE_URL:https://token-plan-cn.xiaomimimo.com/v1}
     api-key: ${AI_API_KEY:tp-cslz3lhan1f6lr991b1xz42pzuiqspfv1tj1hxwq71hi0wuo}

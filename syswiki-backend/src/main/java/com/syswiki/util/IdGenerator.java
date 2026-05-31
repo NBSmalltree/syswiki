@@ -2,25 +2,18 @@ package com.syswiki.util;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * ID生成器
- * 格式: 前缀 + 日期 + 序号
- * 示例: SP20260530000001
- */
 public class IdGenerator {
-
-    private static final AtomicLong SEQ = new AtomicLong(0);
-    private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final AtomicLong SEQ = new AtomicLong(ThreadLocalRandom.current().nextInt(10000, 99999));
+    private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     public static String nextId(String prefix) {
-        String date = LocalDateTime.now().format(FMT);
-        long seq = SEQ.incrementAndGet() % 1000000;
-        return prefix + date + String.format("%06d", seq);
+        String ts = LocalDateTime.now().format(FMT);
+        long seq = SEQ.incrementAndGet() % 100000;
+        return prefix + ts + String.format("%05d", seq);
     }
 
-    public static String nextId() {
-        return nextId("ID");
-    }
+    public static String nextId() { return nextId("ID"); }
 }

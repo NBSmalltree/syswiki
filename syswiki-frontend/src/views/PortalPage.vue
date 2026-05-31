@@ -7,7 +7,7 @@
 
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
       <h3>已入驻系统</h3>
-      <el-button type="primary" @click="showCreate = true">
+      <el-button v-if="authStore.isEditor" type="primary" @click="showCreate = true">
         <el-icon><Plus /></el-icon> 创建系统空间
       </el-button>
     </div>
@@ -57,10 +57,12 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getSpaceList, createSpace } from '@/api/space'
+import { useAuthStore } from '@/stores/auth'
 import { formatDate } from '@/utils/date'
 import type { Space, CreateSpaceForm } from '@/types/space'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const spaceList = ref<Space[]>([])
 const loading = ref(false)
 const showCreate = ref(false)

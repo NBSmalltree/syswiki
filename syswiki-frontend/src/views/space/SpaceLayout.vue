@@ -31,11 +31,13 @@
             <el-icon><ChatDotRound /></el-icon>
             <span>AI问答</span>
           </el-menu-item>
-          <el-divider />
-          <el-menu-item index="edit">
-            <el-icon><Edit /></el-icon>
-            <span>编辑内容</span>
-          </el-menu-item>
+          <template v-if="canEdit">
+            <el-divider />
+            <el-menu-item index="edit">
+              <el-icon><Edit /></el-icon>
+              <span>编辑内容</span>
+            </el-menu-item>
+          </template>
         </el-menu>
       </el-aside>
       <el-main>
@@ -46,29 +48,32 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useSpaceStore } from '@/stores/space'
+import request from '@/api/request'
 
 const route = useRoute()
 const spaceStore = useSpaceStore()
 const systemId = computed(() => route.params.systemId as string)
+const canEdit = ref(false)
+
 const activeMenu = computed(() => {
-  const path = route.path
-  const parts = path.split('/')
+  const parts = route.path.split('/')
   return parts[parts.length - 1] || 'intro'
 })
 
-onMounted(() => {
+onMounted(async () => {
   if (systemId.value) {
     spaceStore.fetchSpaceDetail(systemId.value)
+    try {
+      const res = await request.get(`/spaces/${systemId.value}/permission`)
+      canEdit.value = res.data?.canEdit || false
+    } catch { canEdit.value = false }
   }
 })
 </script>
 
 <style scoped>
-.space-sidebar {
-  background: #fff;
-  border-right: 1px solid #e4e7ed;
-}
+.space-sidebar { background: #fff; border-right: 1px solid #e4e7ed; }
 </style>

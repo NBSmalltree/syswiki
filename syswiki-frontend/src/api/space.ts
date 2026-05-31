@@ -12,3 +12,7 @@ export function getSpaceDetail(systemId: string) {
 export function createSpace(data: CreateSpaceForm) {
   return request.post<Space>('/spaces', data)
 }
+
+export function getMySystems() {
+  return request.get<Space[]>('/spaces/my')
+}

@@ -7,19 +7,74 @@ CREATE DATABASE IF NOT EXISTS syswiki DEFAULT CHARACTER SET utf8mb4 COLLATE utf8
 USE syswiki;
 
 -- =============================================
--- 1. 系统空间主表
+-- 按依赖顺序删除所有表
 -- =============================================
+DROP TABLE IF EXISTS sys_login_log;
+DROP TABLE IF EXISTS sys_system_member;
+DROP TABLE IF EXISTS sys_user;
 DROP TABLE IF EXISTS sys_ency_content_version;
 DROP TABLE IF EXISTS sys_ency_content;
 DROP TABLE IF EXISTS sys_ency_topology;
 DROP TABLE IF EXISTS sys_ency_sql_lib;
 DROP TABLE IF EXISTS sys_ency_space;
 
+-- =============================================
+-- 1. 用户账号表
+-- =============================================
+CREATE TABLE sys_user (
+    user_id         VARCHAR(32)     NOT NULL            COMMENT '用户唯一编号',
+    username        VARCHAR(64)     NOT NULL            COMMENT '登录用户名',
+    password        VARCHAR(128)    NOT NULL            COMMENT '密码（BCrypt加密）',
+    nickname        VARCHAR(64)     DEFAULT NULL        COMMENT '昵称/显示名',
+    role            VARCHAR(16)     NOT NULL DEFAULT 'VIEWER' COMMENT '全局角色：ADMIN/EDITOR/VIEWER',
+    status          VARCHAR(16)     NOT NULL DEFAULT 'ACTIVE' COMMENT '状态：ACTIVE/DISABLED',
+    create_time     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time     DATETIME        DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (user_id),
+    UNIQUE KEY uk_user_username (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户账号表';
+
+-- 预置管理员账号 admin / 123456（密码由应用启动时自动加密设置）
+INSERT INTO sys_user (user_id, username, password, nickname, role, status)
+VALUES ('U00000000000001', 'admin', 'placeholder', '系统管理员', 'ADMIN', 'ACTIVE');
+
+-- =============================================
+-- 2. 系统成员关系表
+-- =============================================
+CREATE TABLE sys_system_member (
+    id              VARCHAR(32)     NOT NULL            COMMENT '主键',
+    system_id       VARCHAR(32)     NOT NULL            COMMENT '系统编号',
+    user_id         VARCHAR(32)     NOT NULL            COMMENT '用户编号',
+    role            VARCHAR(16)     NOT NULL DEFAULT 'ADMIN' COMMENT '系统角色：OWNER/ADMIN',
+    create_time     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_system_user (system_id, user_id),
+    KEY idx_member_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统成员关系表';
+
+-- =============================================
+-- 3. 登录日志表
+-- =============================================
+CREATE TABLE sys_login_log (
+    log_id          VARCHAR(32)     NOT NULL            COMMENT '日志编号',
+    username        VARCHAR(64)     NOT NULL            COMMENT '登录用户名',
+    login_ip        VARCHAR(64)     DEFAULT NULL        COMMENT '登录IP',
+    status          VARCHAR(16)     NOT NULL            COMMENT '成功/失败',
+    message         VARCHAR(256)    DEFAULT NULL        COMMENT '备注信息',
+    create_time     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '登录时间',
+    PRIMARY KEY (log_id),
+    KEY idx_login_user (username),
+    KEY idx_login_time (create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='登录日志表';
+
+-- =============================================
+-- 4. 系统空间主表
+-- =============================================
 CREATE TABLE sys_ency_space (
     system_id       VARCHAR(32)     NOT NULL            COMMENT '系统唯一编号（主键）',
     system_name     VARCHAR(128)    NOT NULL            COMMENT '系统名称',
     system_code     VARCHAR(32)     NOT NULL            COMMENT '系统代号（唯一）',
-    owner           VARCHAR(64)     NOT NULL            COMMENT '系统负责人',
+    owner           VARCHAR(64)     NOT NULL            COMMENT '系统负责人（username）',
     description     VARCHAR(512)    DEFAULT NULL        COMMENT '系统简要描述',
     status          VARCHAR(16)     NOT NULL DEFAULT 'ACTIVE' COMMENT '状态：ACTIVE/DISABLED',
     create_time     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -30,7 +85,7 @@ CREATE TABLE sys_ency_space (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统百科-空间主表';
 
 -- =============================================
--- 2. 百科内容明细表
+-- 5. 百科内容明细表
 -- =============================================
 CREATE TABLE sys_ency_content (
     content_id      VARCHAR(32)     NOT NULL            COMMENT '内容唯一编号（主键）',
@@ -49,7 +104,7 @@ CREATE TABLE sys_ency_content (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统百科-内容明细表';
 
 -- =============================================
--- 3. 内容版本历史表
+-- 6. 内容版本历史表
 -- =============================================
 CREATE TABLE sys_ency_content_version (
     version_id      VARCHAR(32)     NOT NULL            COMMENT '版本记录唯一编号',
@@ -66,7 +121,7 @@ CREATE TABLE sys_ency_content_version (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统百科-内容版本历史表';
 
 -- =============================================
--- 4. 拓扑链路配置表
+-- 7. 拓扑链路配置表
 -- =============================================
 CREATE TABLE sys_ency_topology (
     link_id             VARCHAR(32)     NOT NULL        COMMENT '链路唯一编号',
@@ -85,7 +140,7 @@ CREATE TABLE sys_ency_topology (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统百科-拓扑链路配置表';
 
 -- =============================================
--- 5. 运维SQL库表
+-- 8. 运维SQL库表
 -- =============================================
 CREATE TABLE sys_ency_sql_lib (
     sql_id          VARCHAR(32)     NOT NULL            COMMENT 'SQL条目唯一编号',
@@ -106,10 +161,14 @@ CREATE TABLE sys_ency_sql_lib (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统百科-运维SQL与指令库';
 
 -- =============================================
--- 插入一条示例数据
+-- 插入示例数据
 -- =============================================
 INSERT INTO sys_ency_space (system_id, system_name, system_code, owner, description)
-VALUES ('SP20260530000001', '示例核心系统', 'DEMO', '系统管理员', '系统百科平台示例空间，用于功能演示');
+VALUES ('SP20260530000001', '示例核心系统', 'DEMO', 'admin', '系统百科平台示例空间，用于功能演示');
+
+-- 将admin设为示例系统的OWNER
+INSERT INTO sys_system_member (id, system_id, user_id, role)
+VALUES ('SM20260530000001', 'SP20260530000001', 'U00000000000001', 'OWNER');
 
 INSERT INTO sys_ency_content (content_id, system_id, module_type, md_content, version, operator)
 VALUES ('CT20260530000001', 'SP20260530000001', 'INTRO',
@@ -124,4 +183,4 @@ VALUES ('CT20260530000001', 'SP20260530000001', 'INTRO',
 - MySQL 8.0
 - Vue 3
 - ECharts 5.x',
-1, '系统管理员');
+1, 'admin');

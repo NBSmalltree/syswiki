@@ -1,11 +1,13 @@
 package com.syswiki.controller;
 
+import com.syswiki.auth.PermissionService;
 import com.syswiki.model.dto.SqlRenderRequest;
 import com.syswiki.model.dto.SqlLibSaveDTO;
 import com.syswiki.model.vo.Result;
 import com.syswiki.model.vo.SqlLibVO;
 import com.syswiki.service.SqlLibService;
 import org.springframework.web.bind.annotation.*;
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.*;
 
@@ -13,7 +15,12 @@ import java.util.*;
 @RequestMapping("/api/spaces/{systemId}/sql-lib")
 public class SqlLibController {
     private final SqlLibService sqlLibService;
-    public SqlLibController(SqlLibService sqlLibService) { this.sqlLibService = sqlLibService; }
+    private final PermissionService permissionService;
+
+    public SqlLibController(SqlLibService sqlLibService, PermissionService permissionService) {
+        this.sqlLibService = sqlLibService;
+        this.permissionService = permissionService;
+    }
 
     @GetMapping
     public Result<List<SqlLibVO>> list(@PathVariable String systemId, @RequestParam(required = false) String category) { return Result.success(sqlLibService.listByCategory(systemId, category)); }
@@ -22,10 +29,19 @@ public class SqlLibController {
     public Result<SqlLibVO> detail(@PathVariable String systemId, @PathVariable String sqlId) { return Result.success(sqlLibService.getSqlDetail(systemId, sqlId)); }
 
     @PostMapping
-    public Result<SqlLibVO> add(@PathVariable String systemId, @RequestBody @Valid SqlLibSaveDTO dto) { return Result.success(sqlLibService.addSql(systemId, dto)); }
+    public Result<SqlLibVO> add(@PathVariable String systemId, @RequestBody @Valid SqlLibSaveDTO dto, HttpServletRequest request) {
+        String userId = (String) request.getAttribute("currentUserId");
+        String role = (String) request.getAttribute("currentRole");
+        permissionService.requireEditPermission(userId, role, systemId);
+        dto.setOperator((String) request.getAttribute("currentUsername"));
+        return Result.success(sqlLibService.addSql(systemId, dto));
+    }
 
     @DeleteMapping("/{sqlId}")
-    public Result<Void> delete(@PathVariable String systemId, @PathVariable String sqlId) {
+    public Result<Void> delete(@PathVariable String systemId, @PathVariable String sqlId, HttpServletRequest request) {
+        String userId = (String) request.getAttribute("currentUserId");
+        String role = (String) request.getAttribute("currentRole");
+        permissionService.requireEditPermission(userId, role, systemId);
         sqlLibService.deleteSql(systemId, sqlId);
         return Result.success(null);
     }
