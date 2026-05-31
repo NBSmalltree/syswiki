@@ -91,7 +91,11 @@ public class AiChatServiceImpl implements AiChatService {
                                 JsonNode choices = node.get("choices");
                                 if (choices != null && choices.size() > 0) {
                                     JsonNode delta = choices.get(0).get("delta");
-                                    if (delta != null && delta.has("content")) callback.onToken(delta.get("content").asText());
+                                    JsonNode contentNode = delta.get("content");
+                                    if (contentNode != null && !contentNode.isNull()) {
+                                        String token = contentNode.asText();
+                                        if (token != null && !token.isEmpty()) callback.onToken(token);
+                                    }
                                 }
                             } catch (Exception ignored) {}
                         }

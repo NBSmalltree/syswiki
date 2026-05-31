@@ -7,9 +7,13 @@ export function useSSE() {
     onError: (err: string) => void
   ) => {
     try {
+      const token = localStorage.getItem('token')
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(body)
       })
       if (!response.ok) {
@@ -34,7 +38,7 @@ export function useSSE() {
             if (!jsonStr) continue
             try {
               const data = JSON.parse(jsonStr)
-              if (data.content) onChunk(data.content)
+              if (data.content && data.content !== 'null') onChunk(data.content)
               if (data.done) { onDone(); return }
             } catch { /* skip malformed */ }
           }
