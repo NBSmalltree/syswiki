@@ -14,4 +14,6 @@ public interface UserService {
     UserVO getUser(String userId);
     void updateRole(String userId, String role);
     void disableUser(String userId);
+    void changePassword(String userId, String oldPassword, String newPassword);
+    void resetPassword(String userId, String newPassword);
 }

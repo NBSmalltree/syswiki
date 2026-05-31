@@ -20,6 +20,14 @@ export function disableUser(userId: string) {
   return request.put(`/users/${userId}/disable`)
 }
 
+export function changeMyPassword(oldPassword: string, newPassword: string) {
+  return request.put('/auth/password', { oldPassword, newPassword })
+}
+
+export function resetUserPassword(userId: string, newPassword: string) {
+  return request.put(`/users/${userId}/password`, { newPassword })
+}
+
 export function getSystemMembers(systemId: string) {
   return request.get(`/spaces/${systemId}/members`)
 }

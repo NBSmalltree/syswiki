@@ -85,6 +85,8 @@ public class ContentServiceImpl extends ServiceImpl<SysEncyContentMapper, SysEnc
             entity.setOperator(dto.getOperator());
             entity.setCreateTime(LocalDateTime.now());
             save(entity);
+            // 首次创建也记录版本历史
+            saveVersionHistory(entity);
             return toVO(entity);
         }
     }
@@ -123,12 +125,28 @@ public class ContentServiceImpl extends ServiceImpl<SysEncyContentMapper, SysEnc
     @Override
     public List<ContentVersionVO> getVersionHistory(String systemId, String moduleType) {
         LambdaQueryWrapper<SysEncyContentVersion> w = new LambdaQueryWrapper<>();
-        w.eq(SysEncyContentVersion::getSystemId, systemId).eq(SysEncyContentVersion::getModuleType, moduleType).orderByDesc(SysEncyContentVersion::getVersion);
-        return versionMapper.selectList(w).stream().map(v -> {
+        w.eq(SysEncyContentVersion::getSystemId, systemId)
+         .eq(SysEncyContentVersion::getModuleType, moduleType)
+         .orderByDesc(SysEncyContentVersion::getVersion);
+        List<SysEncyContentVersion> versions = versionMapper.selectList(w);
+
+        // 历史为空但内容存在时，自动补建初始历史记录
+        if (versions.isEmpty()) {
+            LambdaQueryWrapper<SysEncyContent> cw = new LambdaQueryWrapper<>();
+            cw.eq(SysEncyContent::getSystemId, systemId).eq(SysEncyContent::getModuleType, moduleType);
+            SysEncyContent content = getOne(cw);
+            if (content != null) {
+                saveVersionHistory(content);
+                versions = versionMapper.selectList(w);
+            }
+        }
+
+        return versions.stream().map(v -> {
             ContentVersionVO vo = new ContentVersionVO();
             vo.setVersionId(v.getVersionId());
             vo.setVersion(v.getVersion());
             vo.setOperator(v.getOperator());
+            vo.setMdContent(v.getMdContent());
             vo.setCreateTime(v.getCreateTime());
             return vo;
         }).collect(Collectors.toList());

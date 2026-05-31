@@ -44,4 +44,11 @@ public class UserController {
         userService.disableUser(userId);
         return Result.success(null);
     }
+
+    @PutMapping("/{userId}/password")
+    public Result<Void> resetPassword(@PathVariable String userId, @RequestBody Map<String, String> body, HttpServletRequest request) {
+        permissionService.requireAdmin((String) request.getAttribute("currentRole"));
+        userService.resetPassword(userId, body.get("newPassword"));
+        return Result.success(null);
+    }
 }

@@ -10,7 +10,6 @@ public class SpaceCreateDTO {
     @NotBlank(message = "系统代号不能为空")
     @Size(max = 32)
     private String systemCode;
-    @NotBlank(message = "负责人不能为空")
     @Size(max = 64)
     private String owner;
     @Size(max = 512)

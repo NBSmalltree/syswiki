@@ -88,4 +88,11 @@ public class SpaceController {
         permissionService.requireEditPermission(userId, role, systemId);
         return Result.success(spaceService.updateSpace(systemId, dto));
     }
+
+    @DeleteMapping("/{systemId}")
+    public Result<Void> delete(@PathVariable String systemId, HttpServletRequest request) {
+        permissionService.requireAdmin((String) request.getAttribute("currentRole"));
+        spaceService.deleteSpace(systemId);
+        return Result.success(null);
+    }
 }

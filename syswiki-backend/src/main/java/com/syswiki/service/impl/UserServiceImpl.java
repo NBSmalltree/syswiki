@@ -139,6 +139,31 @@ public class UserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impleme
         updateById(user);
     }
 
+    @Override
+    public void changePassword(String userId, String oldPassword, String newPassword) {
+        SysUser user = getById(userId);
+        if (user == null) throw new BizException(ErrorCode.NOT_FOUND, "用户不存在");
+        if (!encoder.matches(oldPassword, user.getPassword())) {
+            throw new BizException(ErrorCode.AUTH_FAILED, "旧密码不正确");
+        }
+        if (newPassword == null || newPassword.length() < 6) {
+            throw new BizException(ErrorCode.PARAM_INVALID, "新密码长度不能少于6位");
+        }
+        user.setPassword(encoder.encode(newPassword));
+        updateById(user);
+    }
+
+    @Override
+    public void resetPassword(String userId, String newPassword) {
+        SysUser user = getById(userId);
+        if (user == null) throw new BizException(ErrorCode.NOT_FOUND, "用户不存在");
+        if (newPassword == null || newPassword.length() < 6) {
+            throw new BizException(ErrorCode.PARAM_INVALID, "新密码长度不能少于6位");
+        }
+        user.setPassword(encoder.encode(newPassword));
+        updateById(user);
+    }
+
     private void saveLoginLog(String username, String ip, String status, String message) {
         SysLoginLog log = new SysLoginLog();
         log.setLogId(IdGenerator.nextId("LG"));

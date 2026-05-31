@@ -4,17 +4,14 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.syswiki.exception.BizException;
 import com.syswiki.exception.ErrorCode;
-import com.syswiki.mapper.SysEncySpaceMapper;
-import com.syswiki.mapper.SysSystemMemberMapper;
-import com.syswiki.mapper.SysUserMapper;
+import com.syswiki.mapper.*;
 import com.syswiki.model.dto.SpaceCreateDTO;
-import com.syswiki.model.entity.SysEncySpace;
-import com.syswiki.model.entity.SysSystemMember;
-import com.syswiki.model.entity.SysUser;
+import com.syswiki.model.entity.*;
 import com.syswiki.model.vo.SpaceVO;
 import com.syswiki.service.SpaceService;
 import com.syswiki.util.IdGenerator;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,10 +24,20 @@ public class SpaceServiceImpl
 
     private final SysSystemMemberMapper memberMapper;
     private final SysUserMapper userMapper;
+    private final SysEncyContentMapper contentMapper;
+    private final SysEncyContentVersionMapper versionMapper;
+    private final SysEncyTopologyMapper topologyMapper;
+    private final SysEncySqlLibMapper sqlLibMapper;
 
-    public SpaceServiceImpl(SysSystemMemberMapper memberMapper, SysUserMapper userMapper) {
+    public SpaceServiceImpl(SysSystemMemberMapper memberMapper, SysUserMapper userMapper,
+                            SysEncyContentMapper contentMapper, SysEncyContentVersionMapper versionMapper,
+                            SysEncyTopologyMapper topologyMapper, SysEncySqlLibMapper sqlLibMapper) {
         this.memberMapper = memberMapper;
         this.userMapper = userMapper;
+        this.contentMapper = contentMapper;
+        this.versionMapper = versionMapper;
+        this.topologyMapper = topologyMapper;
+        this.sqlLibMapper = sqlLibMapper;
     }
 
     @Override
@@ -69,8 +76,14 @@ public class SpaceServiceImpl
     public SpaceVO updateSpace(String systemId, SpaceCreateDTO dto) {
         SysEncySpace entity = getById(systemId);
         if (entity == null) throw new BizException(ErrorCode.SPACE_NOT_FOUND);
-        if (dto.getSystemName() != null) entity.setSystemName(dto.getSystemName());
-        if (dto.getOwner() != null) entity.setOwner(dto.getOwner());
+        if (dto.getSystemName() != null && !dto.getSystemName().isEmpty()) entity.setSystemName(dto.getSystemName());
+        if (dto.getSystemCode() != null && !dto.getSystemCode().isEmpty()) {
+            // 校验代号唯一（排除自身）
+            LambdaQueryWrapper<SysEncySpace> w = new LambdaQueryWrapper<>();
+            w.eq(SysEncySpace::getSystemCode, dto.getSystemCode()).ne(SysEncySpace::getSystemId, systemId);
+            if (count(w) > 0) throw new BizException(ErrorCode.SPACE_CODE_DUPLICATE);
+            entity.setSystemCode(dto.getSystemCode());
+        }
         if (dto.getDescription() != null) entity.setDescription(dto.getDescription());
         updateById(entity);
         return toVO(entity);
@@ -79,6 +92,34 @@ public class SpaceServiceImpl
     @Override
     public void validateSpaceExists(String systemId) {
         if (getById(systemId) == null) throw new BizException(ErrorCode.SPACE_NOT_FOUND);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteSpace(String systemId) {
+        if (getById(systemId) == null) throw new BizException(ErrorCode.SPACE_NOT_FOUND);
+        // 级联删除所有关联数据
+        LambdaQueryWrapper<SysEncyContentVersion> vw = new LambdaQueryWrapper<>();
+        vw.eq(SysEncyContentVersion::getSystemId, systemId);
+        versionMapper.delete(vw);
+
+        LambdaQueryWrapper<SysEncyContent> cw = new LambdaQueryWrapper<>();
+        cw.eq(SysEncyContent::getSystemId, systemId);
+        contentMapper.delete(cw);
+
+        LambdaQueryWrapper<SysEncyTopology> tw = new LambdaQueryWrapper<>();
+        tw.eq(SysEncyTopology::getSystemId, systemId);
+        topologyMapper.delete(tw);
+
+        LambdaQueryWrapper<SysEncySqlLib> sw = new LambdaQueryWrapper<>();
+        sw.eq(SysEncySqlLib::getSystemId, systemId);
+        sqlLibMapper.delete(sw);
+
+        LambdaQueryWrapper<SysSystemMember> mw = new LambdaQueryWrapper<>();
+        mw.eq(SysSystemMember::getSystemId, systemId);
+        memberMapper.delete(mw);
+
+        removeById(systemId);
     }
 
     private SpaceVO toVO(SysEncySpace e) {

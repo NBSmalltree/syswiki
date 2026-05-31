@@ -12,4 +12,5 @@ public interface SpaceService extends IService<SysEncySpace> {
     SpaceVO createSpace(SpaceCreateDTO dto);
     SpaceVO updateSpace(String systemId, SpaceCreateDTO dto);
     void validateSpaceExists(String systemId);
+    void deleteSpace(String systemId);
 }

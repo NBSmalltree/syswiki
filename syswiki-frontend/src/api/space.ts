@@ -16,3 +16,15 @@ export function createSpace(data: CreateSpaceForm) {
 export function getMySystems() {
   return request.get<Space[]>('/spaces/my')
 }
+
+export function updateSpace(systemId: string, data: { systemName?: string; systemCode?: string; description?: string }) {
+  return request.put<Space>(`/spaces/${systemId}`, data)
+}
+
+export function deleteSpace(systemId: string) {
+  return request.delete(`/spaces/${systemId}`)
+}
+
+export function getSpacePermission(systemId: string) {
+  return request.get<{ canEdit: boolean; isAdmin: boolean }>(`/spaces/${systemId}/permission`)
+}

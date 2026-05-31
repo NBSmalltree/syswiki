@@ -21,3 +21,7 @@ export function importMarkdown(systemId: string, file: File, operator: string) {
     headers: { 'Content-Type': 'multipart/form-data' }
   })
 }
+
+export function getVersionHistory(systemId: string, moduleType: string) {
+  return request.get(`/spaces/${systemId}/contents/${moduleType}/versions`)
+}

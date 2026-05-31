@@ -24,17 +24,18 @@
           <span v-else style="color:#c0c4cc">无</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="220">
+      <el-table-column label="操作" width="320">
         <template #default="{ row }">
-          <template v-if="row.username !== 'admin'">
-            <el-select v-model="row.role" size="small" style="width:100px;margin-right:6px"
+          <div v-if="row.username !== 'admin'" style="display:flex;align-items:center;flex-wrap:wrap;gap:6px">
+            <el-select v-model="row.role" size="small" style="width:100px"
                        @change="handleRoleChange(row)">
               <el-option label="ADMIN" value="ADMIN" />
               <el-option label="EDITOR" value="EDITOR" />
               <el-option label="VIEWER" value="VIEWER" />
             </el-select>
+            <el-button size="small" @click="openResetPwd(row)">重置密码</el-button>
             <el-button v-if="row.role === 'EDITOR'" type="primary" size="small" @click="openAuth(row)">系统授权</el-button>
-          </template>
+          </div>
           <span v-else style="color:#909399;font-size:12px">超级管理员</span>
         </template>
       </el-table-column>
@@ -58,13 +59,26 @@
         <el-button @click="showAuth = false">关闭</el-button>
       </template>
     </el-dialog>
+
+    <!-- 重置密码对话框 -->
+    <el-dialog v-model="showResetPwd" :title="`重置密码 - ${resetPwdUser?.nickname || resetPwdUser?.username}`" width="400px">
+      <el-form label-width="80px">
+        <el-form-item label="新密码">
+          <el-input v-model="newPassword" type="password" show-password placeholder="不少于6位" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showResetPwd = false">取消</el-button>
+        <el-button type="primary" :loading="resetPwdLoading" @click="handleResetPwd">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { getUserList, updateUserRole, getSystemMembers, addSystemMember, removeSystemMember } from '@/api/auth'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getUserList, updateUserRole, resetUserPassword, getSystemMembers, addSystemMember, removeSystemMember } from '@/api/auth'
 import { getSpaceList } from '@/api/space'
 
 const userList = ref<any[]>([])
@@ -74,6 +88,31 @@ const authLoading = ref(false)
 const authUser = ref<any>(null)
 const allSpaces = ref<any[]>([])
 const memberUserIds = ref<Set<string>>(new Set())
+
+// 重置密码
+const showResetPwd = ref(false)
+const resetPwdUser = ref<any>(null)
+const newPassword = ref('')
+const resetPwdLoading = ref(false)
+
+const openResetPwd = (user: any) => {
+  resetPwdUser.value = user
+  newPassword.value = ''
+  showResetPwd.value = true
+}
+
+const handleResetPwd = async () => {
+  if (!newPassword.value || newPassword.value.length < 6) {
+    ElMessage.warning('密码长度不能少于6位'); return
+  }
+  resetPwdLoading.value = true
+  try {
+    await resetUserPassword(resetPwdUser.value.userId, newPassword.value)
+    ElMessage.success('密码已重置')
+    showResetPwd.value = false
+  } catch { /* handled */ }
+  resetPwdLoading.value = false
+}
 
 const roleLabel = (role: string) => {
   const map: Record<string, string> = { ADMIN: '超级管理员', EDITOR: '系统管理员', VIEWER: '访客' }

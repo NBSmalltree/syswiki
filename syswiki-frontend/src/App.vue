@@ -36,6 +36,9 @@
                 <el-dropdown-item v-if="!authStore.isAdmin && authStore.isEditor" command="members">
                   <el-icon><UserFilled /></el-icon>成员管理
                 </el-dropdown-item>
+                <el-dropdown-item command="password">
+                  <el-icon><Lock /></el-icon>修改密码
+                </el-dropdown-item>
                 <el-dropdown-item command="logout" divided>
                   <el-icon><SwitchButton /></el-icon>退出登录
                 </el-dropdown-item>
@@ -49,13 +52,34 @@
       <router-view />
     </el-main>
   </el-container>
+
+  <!-- 修改密码弹窗 -->
+  <el-dialog v-model="showPwdDialog" title="修改密码" width="400px" append-to-body>
+    <el-form :model="pwdForm" label-width="80px">
+      <el-form-item label="旧密码">
+        <el-input v-model="pwdForm.oldPassword" type="password" show-password placeholder="请输入旧密码" />
+      </el-form-item>
+      <el-form-item label="新密码">
+        <el-input v-model="pwdForm.newPassword" type="password" show-password placeholder="不少于6位" />
+      </el-form-item>
+      <el-form-item label="确认密码">
+        <el-input v-model="pwdForm.confirmPassword" type="password" show-password placeholder="再次输入新密码" />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="showPwdDialog = false">取消</el-button>
+      <el-button type="primary" :loading="pwdLoading" @click="handleChangePwd">确定</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { useSpaceStore } from '@/stores/space'
 import { useAuthStore } from '@/stores/auth'
+import { changeMyPassword } from '@/api/auth'
 
 const route = useRoute()
 const router = useRouter()
@@ -63,6 +87,31 @@ const spaceStore = useSpaceStore()
 const authStore = useAuthStore()
 
 const isGuestRoute = computed(() => route.meta.guest === true)
+
+// 修改密码
+const showPwdDialog = ref(false)
+const pwdLoading = ref(false)
+const pwdForm = ref({ oldPassword: '', newPassword: '', confirmPassword: '' })
+
+const handleChangePwd = async () => {
+  if (!pwdForm.value.oldPassword || !pwdForm.value.newPassword) {
+    ElMessage.warning('请填写旧密码和新密码'); return
+  }
+  if (pwdForm.value.newPassword.length < 6) {
+    ElMessage.warning('新密码长度不能少于6位'); return
+  }
+  if (pwdForm.value.newPassword !== pwdForm.value.confirmPassword) {
+    ElMessage.warning('两次输入的新密码不一致'); return
+  }
+  pwdLoading.value = true
+  try {
+    await changeMyPassword(pwdForm.value.oldPassword, pwdForm.value.newPassword)
+    ElMessage.success('密码修改成功')
+    showPwdDialog.value = false
+    pwdForm.value = { oldPassword: '', newPassword: '', confirmPassword: '' }
+  } catch { /* handled */ }
+  pwdLoading.value = false
+}
 
 // 监听路由变化，离开系统空间时清空当前系统
 watch(() => route.path, (newPath) => {
@@ -79,6 +128,8 @@ const handleCommand = (cmd: string) => {
     router.push('/admin/users')
   } else if (cmd === 'members') {
     router.push('/admin/members')
+  } else if (cmd === 'password') {
+    showPwdDialog.value = true
   }
 }
 </script>
