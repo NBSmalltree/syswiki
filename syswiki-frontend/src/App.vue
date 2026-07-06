@@ -74,7 +74,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onErrorCaptured } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useSpaceStore } from '@/stores/space'
@@ -87,6 +87,13 @@ const spaceStore = useSpaceStore()
 const authStore = useAuthStore()
 
 const isGuestRoute = computed(() => route.meta.guest === true)
+
+// 全局错误捕获，防止白屏
+onErrorCaptured((err) => {
+  console.error('组件渲染异常:', err)
+  ElMessage.error('页面渲染异常，请刷新重试')
+  return false  // 阻止错误继续向上传播
+})
 
 // 修改密码
 const showPwdDialog = ref(false)
