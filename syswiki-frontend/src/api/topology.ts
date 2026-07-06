@@ -8,3 +8,7 @@ export function getTopologyList(systemId: string) {
 export function batchSaveTopology(systemId: string, links: any[]) {
   return request.post<TopologyLink[]>(`/spaces/${systemId}/topologies`, links)
 }
+
+export function deleteTopology(systemId: string, linkId: string) {
+  return request.delete(`/spaces/${systemId}/topologies/${linkId}`)
+}

@@ -52,6 +52,7 @@ public class TopologyServiceImpl extends ServiceImpl<SysEncyTopologyMapper, SysE
             e.setInterfaceDetails(dto.getInterfaceDetails());
             e.setSortOrder(i);
             e.setCreateTime(LocalDateTime.now());
+            e.setUpdateTime(LocalDateTime.now());
             entities.add(e);
         }
         saveBatch(entities);
