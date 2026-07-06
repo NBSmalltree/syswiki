@@ -117,7 +117,8 @@ CREATE TABLE sys_ency_content_version (
     create_time     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     PRIMARY KEY (version_id),
     KEY idx_version_content (content_id),
-    KEY idx_version_system (system_id)
+    KEY idx_version_system (system_id),
+    KEY idx_version_query (system_id, module_type, version)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统百科-内容版本历史表';
 
 -- =============================================

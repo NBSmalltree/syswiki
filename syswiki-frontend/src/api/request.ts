@@ -25,10 +25,12 @@ request.interceptors.response.use(
     if (code === 200) return { code, message, data }
     // 业务错误：后端返回了HTTP 200，但业务码不是200
     ErrorHandler.handleBusinessError(message, code)
+    return Promise.reject(new Error(message || '业务处理失败'))
   },
   (error) => {
     // 网络错误、HTTP错误（401/403/500等）统一由 ErrorHandler 处理
     ErrorHandler.handleHttpError(error)
+    return Promise.reject(error)
   }
 )
 
