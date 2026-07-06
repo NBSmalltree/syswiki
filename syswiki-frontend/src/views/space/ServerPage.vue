@@ -4,9 +4,9 @@
       <h3>服务器与数据库配置</h3>
     </div>
     <el-tabs v-model="tab" type="border-card">
-      <el-tab-pane label="基础设施" name="SERVER"><el-card v-loading="loading"><MarkdownViewer v-if="serverContent" :content="serverContent" /><el-empty v-else description="暂无内容" /></el-card></el-tab-pane>
-      <el-tab-pane label="网络策略" name="NETWORK"><el-card v-loading="loading"><MarkdownViewer v-if="networkContent" :content="networkContent" /><el-empty v-else description="暂无内容" /></el-card></el-tab-pane>
-      <el-tab-pane label="数据库" name="DATABASE"><el-card v-loading="loading"><MarkdownViewer v-if="dbContent" :content="dbContent" /><el-empty v-else description="暂无内容" /></el-card></el-tab-pane>
+      <el-tab-pane label="基础设施" name="SERVER"><el-card><el-skeleton :loading="loading" animated :count="6"><template #default><MarkdownViewer v-if="serverContent" :content="serverContent" /><el-empty v-else description="暂无基础设施配置内容" /></template></el-skeleton></el-card></el-tab-pane>
+      <el-tab-pane label="网络策略" name="NETWORK"><el-card><el-skeleton :loading="loading" animated :count="6"><template #default><MarkdownViewer v-if="networkContent" :content="networkContent" /><el-empty v-else description="暂无网络策略内容" /></template></el-skeleton></el-card></el-tab-pane>
+      <el-tab-pane label="数据库" name="DATABASE"><el-card><el-skeleton :loading="loading" animated :count="6"><template #default><MarkdownViewer v-if="dbContent" :content="dbContent" /><el-empty v-else description="暂无数据库配置内容" /></template></el-skeleton></el-card></el-tab-pane>
     </el-tabs>
   </div>
 </template>

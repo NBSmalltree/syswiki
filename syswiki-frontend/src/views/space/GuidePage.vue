@@ -3,9 +3,13 @@
     <div class="page-header">
       <h3>快速接入指南</h3>
     </div>
-    <el-card v-loading="loading">
-      <MarkdownViewer v-if="content" :content="content" />
-      <el-empty v-else description="暂无接入指南内容" />
+    <el-card>
+      <el-skeleton :loading="loading" animated :count="6">
+        <template #default>
+          <MarkdownViewer v-if="content" :content="content" />
+          <el-empty v-else description="暂无接入指南内容" />
+        </template>
+      </el-skeleton>
     </el-card>
   </div>
 </template>

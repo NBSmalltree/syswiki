@@ -3,9 +3,13 @@
     <div class="page-header">
       <h3>系统简介</h3>
     </div>
-    <el-card v-loading="loading">
-      <MarkdownViewer v-if="content" :content="content" />
-      <el-empty v-else description="暂无系统简介内容" />
+    <el-card>
+      <el-skeleton :loading="loading" animated :count="6">
+        <template #default>
+          <MarkdownViewer v-if="content" :content="content" />
+          <el-empty v-else description="暂无系统简介内容" />
+        </template>
+      </el-skeleton>
     </el-card>
     <el-card v-if="techStack.length" style="margin-top:16px">
       <template #header><span>技术栈</span></template>

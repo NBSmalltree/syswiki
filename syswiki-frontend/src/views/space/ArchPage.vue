@@ -5,15 +5,23 @@
     </div>
     <el-tabs v-model="tab" type="border-card">
       <el-tab-pane label="测试环境" name="ARCH_TEST">
-        <el-card v-loading="loading">
-          <MarkdownViewer v-if="testContent" :content="testContent" />
-          <el-empty v-else description="暂无测试环境架构内容" />
+        <el-card>
+          <el-skeleton :loading="loading" animated :count="6">
+            <template #default>
+              <MarkdownViewer v-if="testContent" :content="testContent" />
+              <el-empty v-else description="暂无测试环境架构内容" />
+            </template>
+          </el-skeleton>
         </el-card>
       </el-tab-pane>
       <el-tab-pane label="生产环境" name="ARCH_PROD">
-        <el-card v-loading="loading">
-          <MarkdownViewer v-if="prodContent" :content="prodContent" />
-          <el-empty v-else description="暂无生产环境架构内容" />
+        <el-card>
+          <el-skeleton :loading="loading" animated :count="6">
+            <template #default>
+              <MarkdownViewer v-if="prodContent" :content="prodContent" />
+              <el-empty v-else description="暂无生产环境架构内容" />
+            </template>
+          </el-skeleton>
         </el-card>
       </el-tab-pane>
     </el-tabs>
