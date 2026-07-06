@@ -62,6 +62,8 @@ const prodContent = ref('')
 const loading = ref(false)
 
 onMounted(async () => {
+  const MIN_LOADING_MS = 300
+  const start = Date.now()
   loading.value = true
   try {
     const [t, p] = await Promise.all([
@@ -71,6 +73,10 @@ onMounted(async () => {
     testContent.value = t.data?.mdContent || ''
     prodContent.value = p.data?.mdContent || ''
   } catch { /* empty */ }
+  const elapsed = Date.now() - start
+  if (elapsed < MIN_LOADING_MS) {
+    await new Promise(r => setTimeout(r, MIN_LOADING_MS - elapsed))
+  }
   loading.value = false
 })
 </script>

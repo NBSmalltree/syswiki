@@ -36,11 +36,17 @@ const content = ref('')
 const loading = ref(false)
 
 onMounted(async () => {
+  const MIN_LOADING_MS = 300
+  const start = Date.now()
   loading.value = true
   try {
     const res = await getModuleContent(systemId.value, 'GUIDE')
     content.value = res.data?.mdContent || ''
   } catch { /* empty */ }
+  const elapsed = Date.now() - start
+  if (elapsed < MIN_LOADING_MS) {
+    await new Promise(r => setTimeout(r, MIN_LOADING_MS - elapsed))
+  }
   loading.value = false
 })
 </script>
