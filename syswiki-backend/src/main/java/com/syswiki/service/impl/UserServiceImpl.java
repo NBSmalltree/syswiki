@@ -64,7 +64,27 @@ public class UserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impleme
         saveLoginLog(dto.getUsername(), ip, logStatus, logMsg);
 
         String token = jwtUtil.generateToken(user.getUserId(), user.getUsername(), user.getRole());
-        return BeanConverter.toTokenVO(user, token);
+        String refreshToken = jwtUtil.generateRefreshToken(user.getUserId(), user.getUsername(), user.getRole());
+        return BeanConverter.toTokenVO(user, token, refreshToken);
+    }
+
+    @Override
+    public TokenVO refresh(String refreshToken) {
+        if (!jwtUtil.validateRefreshToken(refreshToken)) {
+            throw new BizException(ErrorCode.AUTH_FAILED, "Refresh Token 无效或已过期");
+        }
+        String userId = jwtUtil.getUserId(refreshToken);
+        SysUser user = getById(userId);
+        if (user == null) {
+            throw new BizException(ErrorCode.AUTH_FAILED, "用户不存在");
+        }
+        if ("DISABLED".equals(user.getStatus())) {
+            throw new BizException(ErrorCode.AUTH_FAILED, "账号已禁用");
+        }
+        String newToken = jwtUtil.generateToken(user.getUserId(), user.getUsername(), user.getRole());
+        // 续期 refresh token
+        String newRefreshToken = jwtUtil.generateRefreshToken(user.getUserId(), user.getUsername(), user.getRole());
+        return BeanConverter.toTokenVO(user, newToken, newRefreshToken);
     }
 
     @Override
@@ -90,7 +110,8 @@ public class UserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impleme
 
         log.info("用户注册成功: username={}, userId={}", user.getUsername(), user.getUserId());
         String token = jwtUtil.generateToken(user.getUserId(), user.getUsername(), user.getRole());
-        return BeanConverter.toTokenVO(user, token);
+        String refreshToken = jwtUtil.generateRefreshToken(user.getUserId(), user.getUsername(), user.getRole());
+        return BeanConverter.toTokenVO(user, token, refreshToken);
     }
 
     @Override

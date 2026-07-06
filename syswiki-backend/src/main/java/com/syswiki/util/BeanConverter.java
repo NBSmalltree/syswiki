@@ -70,12 +70,13 @@ public final class BeanConverter {
     /**
      * SysUser -> TokenVO
      */
-    public static TokenVO toTokenVO(SysUser user, String token) {
+    public static TokenVO toTokenVO(SysUser user, String token, String refreshToken) {
         if (user == null) {
             return null;
         }
         TokenVO vo = new TokenVO();
         vo.setToken(token);
+        vo.setRefreshToken(refreshToken);
         vo.setUsername(user.getUsername());
         vo.setNickname(user.getNickname());
         vo.setRole(user.getRole());

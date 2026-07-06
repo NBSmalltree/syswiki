@@ -20,6 +20,9 @@ public class JwtUtil {
     @Value("${syswiki.jwt.expiration}")
     private long expiration;
 
+    @Value("${syswiki.jwt.refresh-expiration:2592000000}")
+    private long refreshExpiration;  // 默认 30 天
+
     private SecretKey key;
 
     @PostConstruct
@@ -43,10 +46,34 @@ public class JwtUtil {
             .setSubject(userId)
             .claim("username", username)
             .claim("role", role)
+            .claim("type", "access")
             .setIssuedAt(new Date())
             .setExpiration(new Date(System.currentTimeMillis() + expiration))
             .signWith(key, SignatureAlgorithm.HS256)
             .compact();
+    }
+
+    /** 生成 refresh token（长期有效，仅用于换取新的 access token） */
+    public String generateRefreshToken(String userId, String username, String role) {
+        return Jwts.builder()
+            .setSubject(userId)
+            .claim("username", username)
+            .claim("role", role)
+            .claim("type", "refresh")
+            .setIssuedAt(new Date())
+            .setExpiration(new Date(System.currentTimeMillis() + refreshExpiration))
+            .signWith(key, SignatureAlgorithm.HS256)
+            .compact();
+    }
+
+    /** 校验 refresh token 是否合法 */
+    public boolean validateRefreshToken(String token) {
+        try {
+            Claims claims = parseClaims(token);
+            return "refresh".equals(claims.get("type", String.class));
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public boolean validateToken(String token) {

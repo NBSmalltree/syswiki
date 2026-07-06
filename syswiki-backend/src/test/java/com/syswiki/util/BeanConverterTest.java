@@ -186,11 +186,12 @@ class BeanConverterTest {
             SysUser user = buildUser();
 
             // when
-            TokenVO vo = BeanConverter.toTokenVO(user, "jwt-token-12345");
+            TokenVO vo = BeanConverter.toTokenVO(user, "jwt-token-12345", "refresh-token-abc");
 
             // then
             assertNotNull(vo);
             assertEquals("jwt-token-12345", vo.getToken());
+            assertEquals("refresh-token-abc", vo.getRefreshToken());
             assertEquals("testuser", vo.getUsername());
             assertEquals("测试用户", vo.getNickname());
             assertEquals("VIEWER", vo.getRole());
@@ -200,7 +201,7 @@ class BeanConverterTest {
         @DisplayName("null user输入 - 返回null")
         void toTokenVO_nullUser() {
             // when
-            TokenVO vo = BeanConverter.toTokenVO(null, "jwt-token-12345");
+            TokenVO vo = BeanConverter.toTokenVO(null, "jwt-token-12345", "ref-abc");
 
             // then
             assertNull(vo);
@@ -213,11 +214,12 @@ class BeanConverterTest {
             SysUser user = buildUser();
 
             // when
-            TokenVO vo = BeanConverter.toTokenVO(user, null);
+            TokenVO vo = BeanConverter.toTokenVO(user, null, "refresh-abc");
 
             // then
             assertNotNull(vo);
             assertNull(vo.getToken());
+            assertEquals("refresh-abc", vo.getRefreshToken());
             assertEquals("testuser", vo.getUsername());
         }
     }

@@ -41,6 +41,16 @@ public class AuthController {
         return Result.success(userService.register(dto));
     }
 
+    @PostMapping("/refresh")
+    public Result<TokenVO> refresh(@RequestBody Map<String, String> body) {
+        String refreshToken = body.get("refreshToken");
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            throw new com.syswiki.exception.BizException(
+                com.syswiki.exception.ErrorCode.PARAM_INVALID, "refreshToken 不能为空");
+        }
+        return Result.success(userService.refresh(refreshToken));
+    }
+
     @PutMapping("/password")
     public Result<Void> changePassword(@RequestBody Map<String, String> body, HttpServletRequest request) {
         String userId = (String) request.getAttribute("currentUserId");

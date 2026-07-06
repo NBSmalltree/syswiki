@@ -10,6 +10,7 @@ import java.util.List;
 public interface UserService {
     TokenVO login(LoginDTO dto, String ip);
     TokenVO register(RegisterDTO dto);
+    TokenVO refresh(String refreshToken);
     List<UserVO> listUsers();
     UserVO getUser(String userId);
     void updateRole(String userId, String role);

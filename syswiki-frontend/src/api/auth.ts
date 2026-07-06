@@ -24,6 +24,10 @@ export function changeMyPassword(oldPassword: string, newPassword: string) {
   return request.put('/auth/password', { oldPassword, newPassword })
 }
 
+export function refreshToken(refreshToken: string) {
+  return request.post('/auth/refresh', { refreshToken })
+}
+
 export function resetUserPassword(userId: string, newPassword: string) {
   return request.put(`/users/${userId}/password`, { newPassword })
 }
