@@ -6,7 +6,17 @@
     <el-tabs v-model="tab" type="border-card">
       <el-tab-pane label="测试环境" name="ARCH_TEST">
         <el-card>
-          <el-skeleton :loading="loading" animated :count="6">
+          <el-skeleton :loading="loading" animated>
+            <template #template>
+              <el-skeleton-item variant="h3" style="width:40%" />
+              <el-skeleton-item variant="p" style="width:100%" />
+              <el-skeleton-item variant="p" style="width:80%" />
+              <el-skeleton-item variant="p" style="width:60%" />
+              <el-skeleton-item variant="text" style="width:35%; margin-top:16px" />
+              <el-skeleton-item variant="p" style="width:90%" />
+              <el-skeleton-item variant="p" style="width:100%" />
+              <el-skeleton-item variant="p" style="width:70%" />
+            </template>
             <template #default>
               <MarkdownViewer v-if="testContent" :content="testContent" />
               <el-empty v-else description="暂无测试环境架构内容" />
@@ -16,7 +26,17 @@
       </el-tab-pane>
       <el-tab-pane label="生产环境" name="ARCH_PROD">
         <el-card>
-          <el-skeleton :loading="loading" animated :count="6">
+          <el-skeleton :loading="loading" animated>
+            <template #template>
+              <el-skeleton-item variant="h3" style="width:40%" />
+              <el-skeleton-item variant="p" style="width:100%" />
+              <el-skeleton-item variant="p" style="width:80%" />
+              <el-skeleton-item variant="p" style="width:60%" />
+              <el-skeleton-item variant="text" style="width:35%; margin-top:16px" />
+              <el-skeleton-item variant="p" style="width:90%" />
+              <el-skeleton-item variant="p" style="width:100%" />
+              <el-skeleton-item variant="p" style="width:70%" />
+            </template>
             <template #default>
               <MarkdownViewer v-if="prodContent" :content="prodContent" />
               <el-empty v-else description="暂无生产环境架构内容" />

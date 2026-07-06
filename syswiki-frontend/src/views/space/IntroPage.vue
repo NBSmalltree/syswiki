@@ -4,7 +4,17 @@
       <h3>系统简介</h3>
     </div>
     <el-card>
-      <el-skeleton :loading="loading" animated :count="6">
+      <el-skeleton :loading="loading" animated>
+        <template #template>
+          <el-skeleton-item variant="h3" style="width:40%" />
+          <el-skeleton-item variant="p" style="width:100%" />
+          <el-skeleton-item variant="p" style="width:80%" />
+          <el-skeleton-item variant="p" style="width:60%" />
+          <el-skeleton-item variant="text" style="width:35%; margin-top:16px" />
+          <el-skeleton-item variant="p" style="width:90%" />
+          <el-skeleton-item variant="p" style="width:100%" />
+          <el-skeleton-item variant="p" style="width:70%" />
+        </template>
         <template #default>
           <MarkdownViewer v-if="content" :content="content" />
           <el-empty v-else description="暂无系统简介内容" />
