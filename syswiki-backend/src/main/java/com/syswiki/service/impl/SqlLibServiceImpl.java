@@ -13,6 +13,7 @@ import com.syswiki.model.vo.SqlLibVO;
 import com.syswiki.service.SqlLibService;
 import com.syswiki.service.SpaceService;
 import com.syswiki.util.IdGenerator;
+import com.syswiki.util.SqlParamValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -67,6 +68,9 @@ public class SqlLibServiceImpl extends ServiceImpl<SysEncySqlLibMapper, SysEncyS
         spaceService.validateSpaceExists(systemId);
         SysEncySqlLib entity = getById(sqlId);
         if (entity == null || !entity.getSystemId().equals(systemId)) throw new BizException(ErrorCode.NOT_FOUND, "SQL条目不存在");
+        // 校验参数值，防止SQL注入
+        SqlParamValidator.validateAll(params);
+
         String result = entity.getSqlTemplate();
         for (Map.Entry<String, String> entry : params.entrySet()) {
             result = result.replace(":" + entry.getKey(), "'" + entry.getValue().replace("'", "''") + "'");

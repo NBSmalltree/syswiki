@@ -4,6 +4,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { sanitizeHtml } from '@/utils/sanitize'
 
 const props = defineProps<{ content: string }>()
 
@@ -25,7 +26,7 @@ const renderedHtml = computed(() => {
     })
   // 代码块
   html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code class="lang-$1">$2</code></pre>')
-  return '<p>' + html + '</p>'
+  return sanitizeHtml('<p>' + html + '</p>')
 })
 </script>
 

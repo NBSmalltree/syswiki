@@ -2,10 +2,10 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
 export const useAuthStore = defineStore('auth', () => {
-  const token = ref(localStorage.getItem('token') || '')
-  const username = ref(localStorage.getItem('username') || '')
-  const nickname = ref(localStorage.getItem('nickname') || '')
-  const role = ref(localStorage.getItem('role') || '')
+  const token = ref(sessionStorage.getItem('token') || '')
+  const username = ref(sessionStorage.getItem('username') || '')
+  const nickname = ref(sessionStorage.getItem('nickname') || '')
+  const role = ref(sessionStorage.getItem('role') || '')
 
   const isLoggedIn = computed(() => !!token.value)
   const isAdmin = computed(() => role.value === 'ADMIN')
@@ -17,10 +17,10 @@ export const useAuthStore = defineStore('auth', () => {
     username.value = data.username
     nickname.value = data.nickname
     role.value = data.role
-    localStorage.setItem('token', data.token)
-    localStorage.setItem('username', data.username)
-    localStorage.setItem('nickname', data.nickname)
-    localStorage.setItem('role', data.role)
+    sessionStorage.setItem('token', data.token)
+    sessionStorage.setItem('username', data.username)
+    sessionStorage.setItem('nickname', data.nickname)
+    sessionStorage.setItem('role', data.role)
   }
 
   function logout() {
@@ -28,10 +28,10 @@ export const useAuthStore = defineStore('auth', () => {
     username.value = ''
     nickname.value = ''
     role.value = ''
-    localStorage.removeItem('token')
-    localStorage.removeItem('username')
-    localStorage.removeItem('nickname')
-    localStorage.removeItem('role')
+    sessionStorage.removeItem('token')
+    sessionStorage.removeItem('username')
+    sessionStorage.removeItem('nickname')
+    sessionStorage.removeItem('role')
   }
 
   return { token, username, nickname, role, isLoggedIn, isAdmin, isEditor, displayName, setAuth, logout }

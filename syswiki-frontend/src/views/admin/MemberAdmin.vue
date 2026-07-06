@@ -65,7 +65,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getMySystems } from '@/api/space'
+import { getSpaceList } from '@/api/space'
 import { getUserList, getSystemMembers, addSystemMember, removeSystemMember } from '@/api/auth'
 
 const mySystems = ref<any[]>([])
@@ -90,7 +90,7 @@ const availableUsers = computed(() =>
 const loadSystems = async () => {
   systemsLoading.value = true
   try {
-    const res = await getMySystems()
+    const res = await getSpaceList('mine')
     mySystems.value = res.data || []
   } catch { /* handled */ }
   systemsLoading.value = false

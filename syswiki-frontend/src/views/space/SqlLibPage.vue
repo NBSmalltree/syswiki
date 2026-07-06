@@ -163,7 +163,22 @@ const handleRender = async (sql: any) => {
   if (sql.params) {
     for (const p of sql.params) {
       const val = paramValues[sql.sqlId + '_' + p.name]
-      if (val) params[p.name] = val
+      if (val) {
+        // 前端参数校验
+        if (val.length > 100) {
+          ElMessage.warning(`参数「${p.label || p.name}」长度超过100个字符限制`)
+          return
+        }
+        if (/[;`\\/*\x00]/.test(val) || /--/.test(val)) {
+          ElMessage.warning(`参数「${p.label || p.name}」包含非法字符（分号、注释符等）`)
+          return
+        }
+        if (/\b(union|select|insert|update|delete|drop|alter|create|exec|execute|truncate|grant|revoke|declare|set|call|merge)\b/i.test(val)) {
+          ElMessage.warning(`参数「${p.label || p.name}」包含SQL关键字，输入不合法`)
+          return
+        }
+        params[p.name] = val
+      }
     }
   }
   try {

@@ -1,11 +1,11 @@
 <template>
-  <div style="max-width:1200px;margin:0 auto;padding:40px 20px">
-    <div style="text-align:center;margin-bottom:40px">
-      <h1 style="font-size:32px;color:#303133;margin-bottom:8px">系统百科平台</h1>
-      <p style="color:#909399;font-size:16px">统一系统知识管理，打破信息孤岛</p>
+  <div class="page-container">
+    <div class="hero-section">
+      <h1 class="hero-title">系统百科平台</h1>
+      <p class="hero-subtitle">统一系统知识管理，打破信息孤岛</p>
     </div>
 
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+    <div class="page-header">
       <h3>已入驻系统</h3>
       <el-button v-if="authStore.isEditor" type="primary" @click="openCreate">
         <el-icon><Plus /></el-icon> 创建系统空间
@@ -13,20 +13,20 @@
     </div>
 
     <el-row :gutter="20" v-loading="loading">
-      <el-col :span="6" v-for="space in spaceList" :key="space.systemId" style="margin-bottom:20px">
-        <el-card shadow="hover" style="position:relative">
-          <div style="cursor:pointer" @click="enterSpace(space.systemId)">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-              <h4 style="margin:0">{{ space.systemName }}</h4>
+      <el-col :span="6" v-for="space in spaceList" :key="space.systemId" class="grid-item">
+        <el-card shadow="hover" class="space-card">
+          <div class="space-card__clickable" @click="enterSpace(space.systemId)">
+            <div class="space-card__header">
+              <h4>{{ space.systemName }}</h4>
               <el-tag size="small">{{ space.systemCode }}</el-tag>
             </div>
-            <p v-if="space.description" style="color:#909399;font-size:13px;margin:4px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+            <p v-if="space.description" class="space-card__desc">
               {{ space.description }}
             </p>
-            <p style="color:#909399;font-size:13px;margin:4px 0">负责人：{{ space.owner }}</p>
+            <p class="space-card__meta">负责人：{{ space.owner }}</p>
           </div>
           <!-- 操作按钮（始终占位，保持卡片等高） -->
-          <div style="display:flex;gap:6px;margin-top:10px;border-top:1px solid #f0f0f0;padding-top:10px;min-height:28px"
+          <div class="space-card__actions"
                @click.stop>
             <el-button v-if="canEdit(space)" type="primary" link size="small" @click="openEdit(space)">编辑</el-button>
             <el-button v-if="authStore.isAdmin" type="danger" link size="small" @click="handleDelete(space)">删除</el-button>
@@ -82,17 +82,17 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getSpaceList, createSpace, updateSpace, deleteSpace, getSpacePermission } from '@/api/space'
+import { getSpaceList, createSpace, updateSpace, deleteSpace } from '@/api/space'
 import { useAuthStore } from '@/stores/auth'
+import { usePermission } from '@/composables/usePermission'
+import { AppError } from '@/utils/errorHandler'
 import type { Space, CreateSpaceForm } from '@/types/space'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const { fetchPermissions, getCachedPermission } = usePermission()
 const spaceList = ref<Space[]>([])
 const loading = ref(false)
-
-// 权限缓存 systemId → { canEdit, isAdmin }
-const permMap = ref<Record<string, { canEdit: boolean; isAdmin: boolean }>>({})
 
 // 创建
 const showCreate = ref(false)
@@ -105,7 +105,7 @@ const editing = ref(false)
 const editForm = ref({ systemId: '', systemName: '', systemCode: '', description: '' })
 
 const canEdit = (space: Space) => {
-  const p = permMap.value[space.systemId]
+  const p = getCachedPermission(space.systemId)
   return p?.canEdit || false
 }
 
@@ -114,15 +114,9 @@ const loadSpaces = async () => {
   try {
     const res = await getSpaceList()
     spaceList.value = res.data || []
-    // 并行加载每个系统的权限
-    const promises = spaceList.value.map(async (s) => {
-      try {
-        const pr = await getSpacePermission(s.systemId)
-        permMap.value[s.systemId] = pr.data || { canEdit: false, isAdmin: false }
-      } catch { permMap.value[s.systemId] = { canEdit: false, isAdmin: false } }
-    })
-    await Promise.all(promises)
-  } catch { /* handled */ }
+    // Batch-fetch permissions (uses cache, only queries API for uncached systems)
+    await fetchPermissions(spaceList.value.map((s) => s.systemId))
+  } catch (e) { if (e instanceof AppError) throw e /* else: already handled by interceptor */ }
   loading.value = false
 }
 
@@ -145,7 +139,7 @@ const handleCreate = async () => {
     ElMessage.success('创建成功')
     showCreate.value = false
     await loadSpaces()
-  } catch { /* handled */ }
+  } catch (e) { if (e instanceof AppError) throw e /* else: already handled by interceptor */ }
   creating.value = false
 }
 
@@ -173,7 +167,7 @@ const handleEdit = async () => {
     ElMessage.success('保存成功')
     showEdit.value = false
     await loadSpaces()
-  } catch { /* handled */ }
+  } catch (e) { if (e instanceof AppError) throw e /* else: already handled by interceptor */ }
   editing.value = false
 }
 
@@ -187,7 +181,7 @@ const handleDelete = async (space: Space) => {
     await deleteSpace(space.systemId)
     ElMessage.success('已删除')
     await loadSpaces()
-  } catch { /* cancelled */ }
+  } catch { /* user cancelled confirm dialog or already handled by interceptor */ }
 }
 
 onMounted(loadSpaces)

@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { getTopologyList } from '@/api/topology'
 import MarkdownViewer from '@/components/common/MarkdownViewer.vue'
@@ -40,6 +40,9 @@ const chartRef = ref<HTMLElement>()
 const drawerVisible = ref(false)
 const selectedLink = ref<TopologyLink | null>(null)
 const drawerTitle = ref('')
+
+let chart: echarts.ECharts | null = null
+let handleResize: (() => void) | null = null
 
 onMounted(async () => {
   loading.value = true
@@ -56,7 +59,7 @@ onMounted(async () => {
 
 const renderChart = () => {
   if (!chartRef.value) return
-  const chart = echarts.init(chartRef.value)
+  chart = echarts.init(chartRef.value)
   const nodeSet = new Set<string>()
   links.value.forEach(l => { nodeSet.add(l.fromNode); nodeSet.add(l.toNode) })
   const nodes = Array.from(nodeSet).map(n => ({ name: n, symbolSize: 40 }))
@@ -85,5 +88,17 @@ const renderChart = () => {
       }
     }
   })
+
+  handleResize = () => chart?.resize()
+  window.addEventListener('resize', handleResize)
 }
+
+onUnmounted(() => {
+  if (handleResize) {
+    window.removeEventListener('resize', handleResize)
+    handleResize = null
+  }
+  chart?.dispose()
+  chart = null
+})
 </script>

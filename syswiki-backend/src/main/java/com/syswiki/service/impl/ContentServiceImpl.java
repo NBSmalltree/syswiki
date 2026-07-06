@@ -14,7 +14,9 @@ import com.syswiki.model.vo.ContentVersionVO;
 import com.syswiki.service.ContentService;
 import com.syswiki.service.MarkdownParserService;
 import com.syswiki.service.SpaceService;
+import com.syswiki.service.VectorSyncService;
 import com.syswiki.util.IdGenerator;
+import com.syswiki.util.SensitiveWordChecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -35,11 +37,17 @@ public class ContentServiceImpl extends ServiceImpl<SysEncyContentMapper, SysEnc
     private final SpaceService spaceService;
     private final MarkdownParserService markdownParserService;
     private final SysEncyContentVersionMapper versionMapper;
+    private final VectorSyncService vectorSyncService;
+    private final SensitiveWordChecker sensitiveWordChecker;
 
-    public ContentServiceImpl(SpaceService spaceService, MarkdownParserService markdownParserService, SysEncyContentVersionMapper versionMapper) {
+    public ContentServiceImpl(SpaceService spaceService, MarkdownParserService markdownParserService,
+                              SysEncyContentVersionMapper versionMapper, VectorSyncService vectorSyncService,
+                              SensitiveWordChecker sensitiveWordChecker) {
         this.spaceService = spaceService;
         this.markdownParserService = markdownParserService;
         this.versionMapper = versionMapper;
+        this.vectorSyncService = vectorSyncService;
+        this.sensitiveWordChecker = sensitiveWordChecker;
     }
 
     @Override
@@ -62,6 +70,9 @@ public class ContentServiceImpl extends ServiceImpl<SysEncyContentMapper, SysEnc
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ContentVO saveContent(String systemId, String moduleType, ContentSaveDTO dto) {
+        // 敏感词检查
+        sensitiveWordChecker.check(dto.getMdContent());
+
         spaceService.validateSpaceExists(systemId);
         LambdaQueryWrapper<SysEncyContent> w = new LambdaQueryWrapper<>();
         w.eq(SysEncyContent::getSystemId, systemId).eq(SysEncyContent::getModuleType, moduleType);
@@ -74,6 +85,8 @@ public class ContentServiceImpl extends ServiceImpl<SysEncyContentMapper, SysEnc
             existing.setOperator(dto.getOperator());
             existing.setUpdateTime(LocalDateTime.now());
             updateById(existing);
+            // 异步触发向量化
+            vectorSyncService.syncContent(systemId, moduleType, dto.getMdContent());
             return toVO(existing);
         } else {
             SysEncyContent entity = new SysEncyContent();
@@ -87,6 +100,8 @@ public class ContentServiceImpl extends ServiceImpl<SysEncyContentMapper, SysEnc
             save(entity);
             // 首次创建也记录版本历史
             saveVersionHistory(entity);
+            // 异步触发向量化
+            vectorSyncService.syncContent(systemId, moduleType, dto.getMdContent());
             return toVO(entity);
         }
     }

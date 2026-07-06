@@ -9,7 +9,10 @@ import com.syswiki.model.dto.SpaceCreateDTO;
 import com.syswiki.model.entity.*;
 import com.syswiki.model.vo.SpaceVO;
 import com.syswiki.service.SpaceService;
+import com.syswiki.util.BeanConverter;
 import com.syswiki.util.IdGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +25,7 @@ public class SpaceServiceImpl
     extends ServiceImpl<SysEncySpaceMapper, SysEncySpace>
     implements SpaceService {
 
+    private static final Logger log = LoggerFactory.getLogger(SpaceServiceImpl.class);
     private final SysSystemMemberMapper memberMapper;
     private final SysUserMapper userMapper;
     private final SysEncyContentMapper contentMapper;
@@ -48,6 +52,14 @@ public class SpaceServiceImpl
     }
 
     @Override
+    public List<SpaceVO> listUserSpaces(String userId) {
+        // 单次 JOIN 查询，替代原来 N+1 次逐个查询权限
+        return baseMapper.selectSpacesByUserId(userId).stream()
+                .map(this::toVO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public SpaceVO getSpaceDetail(String systemId) {
         SysEncySpace entity = getById(systemId);
         if (entity == null) throw new BizException(ErrorCode.SPACE_NOT_FOUND);
@@ -69,6 +81,7 @@ public class SpaceServiceImpl
         entity.setStatus("ACTIVE");
         entity.setCreateTime(LocalDateTime.now());
         save(entity);
+        log.info("系统创建成功: systemId={}, systemName={}, systemCode={}", entity.getSystemId(), entity.getSystemName(), entity.getSystemCode());
         return toVO(entity);
     }
 
@@ -86,6 +99,7 @@ public class SpaceServiceImpl
         }
         if (dto.getDescription() != null) entity.setDescription(dto.getDescription());
         updateById(entity);
+        log.info("系统更新成功: systemId={}, systemName={}", systemId, entity.getSystemName());
         return toVO(entity);
     }
 
@@ -98,6 +112,7 @@ public class SpaceServiceImpl
     @Transactional(rollbackFor = Exception.class)
     public void deleteSpace(String systemId) {
         if (getById(systemId) == null) throw new BizException(ErrorCode.SPACE_NOT_FOUND);
+        log.warn("系统删除开始: systemId={}, 将级联删除所有关联数据", systemId);
         // 级联删除所有关联数据
         LambdaQueryWrapper<SysEncyContentVersion> vw = new LambdaQueryWrapper<>();
         vw.eq(SysEncyContentVersion::getSystemId, systemId);
@@ -120,17 +135,11 @@ public class SpaceServiceImpl
         memberMapper.delete(mw);
 
         removeById(systemId);
+        log.info("系统删除成功: systemId={}", systemId);
     }
 
     private SpaceVO toVO(SysEncySpace e) {
-        SpaceVO vo = new SpaceVO();
-        vo.setSystemId(e.getSystemId());
-        vo.setSystemName(e.getSystemName());
-        vo.setSystemCode(e.getSystemCode());
-        vo.setDescription(e.getDescription());
-        vo.setStatus(e.getStatus());
-        vo.setCreateTime(e.getCreateTime());
-        vo.setUpdateTime(e.getUpdateTime());
+        SpaceVO vo = BeanConverter.toSpaceVO(e);
 
         // 从 sys_system_member 查真正的 OWNER，显示其昵称
         String ownerDisplay = resolveOwnerNickname(e.getSystemId());

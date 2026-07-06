@@ -52,15 +52,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useSpaceStore } from '@/stores/space'
-import request from '@/api/request'
+import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
 const spaceStore = useSpaceStore()
+const { fetchPermission, canEdit: canEditPerm } = usePermission()
 const systemId = computed(() => route.params.systemId as string)
-const canEdit = ref(false)
+const canEdit = canEditPerm(systemId)
 
 const activeMenu = computed(() => {
   const parts = route.path.split('/')
@@ -70,10 +71,7 @@ const activeMenu = computed(() => {
 onMounted(async () => {
   if (systemId.value) {
     spaceStore.fetchSpaceDetail(systemId.value)
-    try {
-      const res = await request.get(`/spaces/${systemId.value}/permission`)
-      canEdit.value = res.data?.canEdit || false
-    } catch { canEdit.value = false }
+    await fetchPermission(systemId.value)
   }
 })
 </script>

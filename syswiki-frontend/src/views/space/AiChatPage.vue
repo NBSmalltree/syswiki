@@ -1,24 +1,24 @@
 <template>
-  <div style="display:flex;flex-direction:column;height:calc(100vh - 140px)">
+  <div class="chat-page">
     <div class="page-header">
       <h3>AI智能问答</h3>
-      <div style="display:flex;align-items:center;gap:12px">
+      <div class="chat-toolbar">
         <el-switch v-model="useThink" active-text="深度推理" inactive-text="快速问答" />
         <el-button size="small" @click="handleClear">清空对话</el-button>
       </div>
     </div>
 
     <!-- 对话区 -->
-    <div ref="messagesRef" style="flex:1;overflow-y:auto;padding:16px;background:#fafafa;border-radius:8px;margin-bottom:16px">
+    <div ref="messagesRef" class="chat-messages">
 
       <!-- 开场白 -->
-      <div v-if="messages.length === 0" style="padding:20px 0">
-        <div style="display:flex;margin-bottom:16px">
-          <el-avatar :size="40" style="background:#67c23a;flex-shrink:0">AI</el-avatar>
-          <div style="margin-left:12px">
+      <div v-if="messages.length === 0" class="welcome-section">
+        <div class="welcome-row">
+          <el-avatar :size="40" class="avatar-ai">AI</el-avatar>
+          <div class="welcome-content">
             <div class="ai-bubble">
-              <p style="margin:0 0 8px">你好！我是系统百科 AI 助手，可以回答关于 <strong>{{ spaceStore.currentSystemName }}</strong> 的各类问题。</p>
-              <p style="margin:0;color:#909399;font-size:13px">你可以直接输入问题，或点击下方推荐问题开始：</p>
+              <p class="m-0 mb-sm">你好！我是系统百科 AI 助手，可以回答关于 <strong>{{ spaceStore.currentSystemName }}</strong> 的各类问题。</p>
+              <p class="m-0 text-muted">你可以直接输入问题，或点击下方推荐问题开始：</p>
             </div>
             <div class="suggest-wrap">
               <el-button v-for="q in welcomeQuestions" :key="q" class="suggest-btn" @click="sendQuestion(q)">{{ q }}</el-button>
@@ -29,22 +29,23 @@
 
       <!-- 消息列表 -->
       <template v-for="(msg, idx) in messages" :key="msg.id">
-        <div style="display:flex;margin-bottom:16px"
-             :style="{ flexDirection: msg.role === 'user' ? 'row-reverse' : 'row' }">
-          <el-avatar :size="36" :style="{ background: msg.role === 'user' ? '#409eff' : '#67c23a', flexShrink: 0 }">
+        <div class="msg-row"
+             :class="{ 'msg-row--user': msg.role === 'user' }">
+          <el-avatar :size="36"
+                     :class="msg.role === 'user' ? 'avatar-user' : 'avatar-ai'">
             {{ msg.role === 'user' ? 'U' : 'AI' }}
           </el-avatar>
-          <div style="max-width:70%;padding:10px 14px;border-radius:8px;margin:0 10px"
-               :style="{ background: msg.role === 'user' ? '#409eff' : '#fff', color: msg.role === 'user' ? '#fff' : '#333' }">
+          <div class="msg-bubble"
+               :class="msg.role === 'user' ? 'msg-bubble--user' : 'msg-bubble--ai'">
             <MarkdownViewer v-if="msg.role === 'assistant' && msg.content" :content="cleanContent(msg.content)" />
             <span v-else>{{ msg.content }}</span>
           </div>
         </div>
         <!-- AI 回答末尾的推荐问题 -->
         <div v-if="msg.role === 'assistant' && !loading && idx === messages.length - 1 && getFollowUps(msg.content).length"
-             style="display:flex;margin-bottom:16px">
-          <div style="width:36px;flex-shrink:0"></div>
-          <div style="margin-left:10px">
+             class="follow-up-row">
+          <div class="follow-up-spacer"></div>
+          <div class="ml-md">
             <div class="suggest-wrap">
               <el-button v-for="q in getFollowUps(msg.content)" :key="q" class="suggest-btn" @click="sendQuestion(q)">{{ q }}</el-button>
             </div>
@@ -53,19 +54,19 @@
       </template>
 
       <!-- 加载中 -->
-      <div v-if="loading" style="display:flex;margin-bottom:16px">
-        <el-avatar :size="36" style="background:#67c23a;flex-shrink:0">AI</el-avatar>
-        <div style="padding:10px 14px;background:#fff;border-radius:8px;margin-left:10px">
+      <div v-if="loading" class="loading-row">
+        <el-avatar :size="36" class="avatar-ai">AI</el-avatar>
+        <div class="loading-bubble">
           <span class="typing-dots">思考中...</span>
         </div>
       </div>
     </div>
 
     <!-- 输入区 -->
-    <div style="display:flex;gap:8px">
+    <div class="chat-input-area">
       <el-input v-model="input" type="textarea" :rows="2" placeholder="输入问题，Ctrl+Enter发送"
                 @keydown.ctrl.enter="handleSend" />
-      <el-button type="primary" :disabled="!input.trim() || loading" @click="handleSend" style="height:auto">发送</el-button>
+      <el-button type="primary" :disabled="!input.trim() || loading" @click="handleSend" class="h-auto">发送</el-button>
     </div>
   </div>
 </template>
@@ -77,6 +78,8 @@ import { useSSE } from '@/composables/useSSE'
 import { useAiStore } from '@/stores/ai'
 import { useSpaceStore } from '@/stores/space'
 import MarkdownViewer from '@/components/common/MarkdownViewer.vue'
+import { sanitizeHtml } from '@/utils/sanitize'
+import { ErrorType } from '@/utils/errorHandler'
 
 defineOptions({ name: 'AiChatPage' })
 
@@ -109,7 +112,8 @@ const getFollowUps = (content: string): string[] => {
 
 const cleanContent = (content: string): string => {
   if (!content) return ''
-  return content.replace(/\s*【推荐问题】[\s\S]*$/, '').trim()
+  const cleaned = content.replace(/\s*【推荐问题】[\s\S]*$/, '').trim()
+  return sanitizeHtml(cleaned)
 }
 
 const scrollToBottom = () => {
@@ -132,7 +136,12 @@ const handleSend = async () => {
     { message: text, model: useThink.value ? 'think' : 'flash' },
     (chunk) => { aiStore.appendToLastMessage(systemId.value, chunk); scrollToBottom() },
     () => { loading.value = false },
-    (err) => { aiStore.appendToLastMessage(systemId.value, '错误: ' + err); loading.value = false }
+    (err) => {
+      // 认证错误已在 useSSE 中分类，组件展示友好提示即可
+      const prefix = err.type === ErrorType.AUTH_ERROR ? '[认证] ' : ''
+      aiStore.appendToLastMessage(systemId.value, '错误: ' + prefix + err.message)
+      loading.value = false
+    }
   )
 }
 

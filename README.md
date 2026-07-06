@@ -46,13 +46,43 @@
 - MySQL 5.7+ 或 8.0
 - Maven 3.6+
 
-### 1. 初始化数据库
+### 1. 配置环境变量
+
+系统**必须**通过环境变量注入敏感配置，应用启动前请确保以下变量已设置：
+
+```bash
+# 复制环境变量模板
+cp .env.example .env
+
+# 编辑 .env，填入实际值
+vi .env
+
+# 加载环境变量
+source .env
+```
+
+**必需的环境变量：**
+
+| 环境变量 | 说明 |
+|---------|------|
+| `JWT_SECRET` | JWT 签名密钥（至少 32 字节）。生成方法：`openssl rand -hex 32` |
+| `AI_BASE_URL` | AI 服务 API 地址（OpenAI 兼容协议） |
+| `AI_API_KEY` | AI 服务 API Key |
+
+**可选的环境变量：**
+
+| 环境变量 | 说明 | 默认值 |
+|---------|------|--------|
+| `AI_FLASH_MODEL` | 快速问答模型名称 | `mimo-v2.5-pro` |
+| `AI_THINK_MODEL` | 深度推理模型名称 | `mimo-v2.5-pro` |
+
+### 2. 初始化数据库
 
 ```bash
 mysql -uroot -p < syswiki-backend/src/main/resources/init.sql
 ```
 
-### 2. 启动后端
+### 3. 启动后端
 
 ```bash
 cd syswiki-backend
@@ -60,9 +90,11 @@ mvn clean package -DskipTests
 java -jar target/syswiki-backend-1.0.0.jar
 ```
 
+> **注意：** 启动前必须确保环境变量已加载，否则应用将因缺少必需配置（JWT_SECRET、AI_BASE_URL、AI_API_KEY）而启动失败。
+
 后端启动后访问：http://localhost:8080/syswiki
 
-### 3. 启动前端
+### 4. 启动前端
 
 ```bash
 cd syswiki-frontend
@@ -72,15 +104,15 @@ npm run dev
 
 前端启动后访问：http://localhost:3000
 
-### 4. 登录
+### 5. 登录
 
 | 账号 | 密码 | 角色 |
 |------|------|------|
 | admin | 123456 | 超级管理员 |
 
-> 首次启动时，应用会自动设置 admin 密码为 123456。
+> 首次启动时，应用会自动设置 admin 密码为 123456。**请在首次登录后立即修改密码**。
 
-### 5. 加载演示数据（可选）
+### 6. 加载演示数据（可选）
 
 ```bash
 mysql -uroot -proot syswiki < syswiki-backend/db/demo-data.sql
@@ -127,6 +159,7 @@ SysWiki/
 │           ├── admin/                   # 用户管理 / 成员管理
 │           └── space/                   # 系统百科各功能页
 │
+├── .env.example                         # 环境变量配置模板
 ├── 系统概要设计文档.md
 ├── 前端详细设计文档.md
 ├── 后端详细设计文档.md
@@ -136,20 +169,39 @@ SysWiki/
 
 ## 配置说明
 
+### 环境变量配置（必需）
+
+系统通过环境变量注入敏感配置，`application.yml` 中使用 `${变量名}` 语法引用：
+
+```bash
+# 必需环境变量
+export JWT_SECRET=$(openssl rand -hex 32)       # JWT 签名密钥
+export AI_BASE_URL=https://api.openai.com/v1    # AI 服务地址
+export AI_API_KEY=your-api-key                   # AI 服务密钥
+```
+
+或使用 `.env` 文件（推荐）：
+
+```bash
+cp .env.example .env
+vi .env
+source .env
+```
+
 ### 后端配置
 
-核心配置项位于 `syswiki-backend/src/main/resources/application.yml`：
+核心配置位于 `syswiki-backend/src/main/resources/application.yml`，敏感字段通过环境变量注入：
 
 ```yaml
 syswiki:
   jwt:
-    secret: your-jwt-secret-key    # JWT 签名密钥（生产环境必须修改）
-    expiration: 86400000            # Token 有效期（毫秒）
+    secret: ${JWT_SECRET}          # 从环境变量读取
+    expiration: 14400000           # Token 有效期 4 小时
   ai:
-    base-url: https://your-ai-api/v1   # AI 模型 API 地址
-    api-key: your-api-key               # AI 模型 Token
-    flash-model: your-model-name        # 快速问答模型
-    think-model: your-model-name        # 深度推理模型
+    base-url: ${AI_BASE_URL}       # 从环境变量读取
+    api-key: ${AI_API_KEY}         # 从环境变量读取
+    flash-model: ${AI_FLASH_MODEL:mimo-v2.5-pro}   # 可选，有默认值
+    think-model: ${AI_THINK_MODEL:mimo-v2.5-pro}   # 可选，有默认值
 ```
 
 ### 数据库切换
@@ -159,16 +211,14 @@ syswiki:
 - `dev` — MySQL（开发环境）
 - `prod` — Oracle（生产环境）
 
-### 环境变量注入
+### 安全配置说明
 
-生产环境建议通过环境变量注入敏感配置：
-
-```bash
-export DB_PASSWORD=your_db_password
-export AI_API_KEY=your_api_key
-export JWT_SECRET=your_jwt_secret
-java -jar syswiki-backend-1.0.0.jar
-```
+| 配置项 | 要求 | 说明 |
+|--------|------|------|
+| `JWT_SECRET` | 必须，至少 32 字节 | 用于 JWT Token 签发和验证，泄露将导致 Token 被伪造 |
+| `AI_API_KEY` | 必须 | AI 服务认证密钥 |
+| 密码策略 | 最低 6 位 | 用户密码最低长度为 6 位 |
+| 首次登录 | 立即修改密码 | admin 默认密码为 123456，首次登录后应立即修改 |
 
 ## 部署
 

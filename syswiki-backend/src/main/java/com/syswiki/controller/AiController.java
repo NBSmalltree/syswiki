@@ -4,6 +4,7 @@ import com.syswiki.model.dto.AiChatRequest;
 import com.syswiki.model.vo.AiChatChunk;
 import com.syswiki.model.vo.Result;
 import com.syswiki.rag.StreamCallback;
+import com.syswiki.rag.SysWikiEmbeddingStoreFactory;
 import com.syswiki.service.AiChatService;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +18,12 @@ import java.util.*;
 @RequestMapping("/api/spaces/{systemId}/ai")
 public class AiController {
     private final AiChatService aiChatService;
-    public AiController(AiChatService aiChatService) { this.aiChatService = aiChatService; }
+    private final SysWikiEmbeddingStoreFactory storeFactory;
+
+    public AiController(AiChatService aiChatService, SysWikiEmbeddingStoreFactory storeFactory) {
+        this.aiChatService = aiChatService;
+        this.storeFactory = storeFactory;
+    }
 
     @PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter chat(@PathVariable String systemId, @RequestBody @Valid AiChatRequest request) {
@@ -42,10 +48,6 @@ public class AiController {
 
     @GetMapping("/status")
     public Result<Map<String, Object>> status(@PathVariable String systemId) {
-        Map<String, Object> s = new HashMap<>();
-        s.put("status", "READY");
-        s.put("totalDocuments", 0);
-        s.put("totalChunks", 0);
-        return Result.success(s);
+        return Result.success(storeFactory.getStatus(systemId));
     }
 }

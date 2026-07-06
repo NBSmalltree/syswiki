@@ -24,11 +24,16 @@ public class JwtUtil {
 
     @PostConstruct
     public void init() {
+        if (secret == null || secret.trim().isEmpty()) {
+            throw new IllegalStateException(
+                "JWT_SECRET 环境变量未设置！请在启动前配置该变量。"
+                + " 示例：export JWT_SECRET=your-secret-key-at-least-32-bytes");
+        }
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
         if (keyBytes.length < 32) {
-            byte[] padded = new byte[32];
-            System.arraycopy(keyBytes, 0, padded, 0, keyBytes.length);
-            keyBytes = padded;
+            throw new IllegalStateException(
+                "JWT_SECRET 长度不足！当前 " + keyBytes.length + " 字节，需要至少 32 字节。"
+                + " 生成方法：openssl rand -hex 32");
         }
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }

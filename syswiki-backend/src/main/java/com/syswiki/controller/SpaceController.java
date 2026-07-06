@@ -10,6 +10,8 @@ import com.syswiki.model.vo.Result;
 import com.syswiki.model.vo.SpaceVO;
 import com.syswiki.service.SpaceService;
 import com.syswiki.service.SystemMemberService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
@@ -20,6 +22,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/spaces")
 public class SpaceController {
+    private static final Logger log = LoggerFactory.getLogger(SpaceController.class);
     private final SpaceService spaceService;
     private final PermissionService permissionService;
     private final SystemMemberService memberService;
@@ -34,19 +37,18 @@ public class SpaceController {
     }
 
     @GetMapping
-    public Result<List<SpaceVO>> list() { return Result.success(spaceService.listActiveSpaces()); }
-
-    @GetMapping("/my")
-    public Result<List<SpaceVO>> mySystems(HttpServletRequest request) {
+    public Result<List<SpaceVO>> list(HttpServletRequest request,
+                                     @RequestParam(defaultValue = "all") String scope) {
         String userId = (String) request.getAttribute("currentUserId");
         String role = (String) request.getAttribute("currentRole");
-        List<SpaceVO> all = spaceService.listActiveSpaces();
-        if ("ADMIN".equals(role)) return Result.success(all);
-        // EDITOR: 只返回自己是成员的系统
-        List<SpaceVO> mine = all.stream()
-            .filter(s -> permissionService.canEditSystem(userId, role, s.getSystemId()))
-            .collect(java.util.stream.Collectors.toList());
-        return Result.success(mine);
+        // scope="all" 返回所有活跃系统（管理员默认）；scope="mine" 返回用户有权限的系统（普通用户默认）
+        List<SpaceVO> result;
+        if ("mine".equals(scope) || (!"ADMIN".equals(role) && "all".equals(scope))) {
+            result = spaceService.listUserSpaces(userId);
+        } else {
+            result = spaceService.listActiveSpaces();
+        }
+        return Result.success(result);
     }
 
     @GetMapping("/{systemId}")
@@ -65,12 +67,13 @@ public class SpaceController {
     @PostMapping
     public Result<SpaceVO> create(@RequestBody @Valid SpaceCreateDTO dto, HttpServletRequest request) {
         String role = (String) request.getAttribute("currentRole");
+        String username = (String) request.getAttribute("currentUsername");
+        log.info("API请求: POST /api/spaces, user={}, systemName={}, systemCode={}", username, dto.getSystemName(), dto.getSystemCode());
         // ADMIN和EDITOR都可以创建系统
         if (!"ADMIN".equals(role) && !"EDITOR".equals(role)) {
             throw new BizException(ErrorCode.FORBIDDEN, "需要EDITOR或ADMIN角色才能创建系统");
         }
         // 自动设置owner为当前用户
-        String username = (String) request.getAttribute("currentUsername");
         dto.setOwner(username);
         SpaceVO space = spaceService.createSpace(dto);
         // 将创建者设为系统OWNER
@@ -85,13 +88,16 @@ public class SpaceController {
     public Result<SpaceVO> update(@PathVariable String systemId, @RequestBody @Valid SpaceCreateDTO dto, HttpServletRequest request) {
         String userId = (String) request.getAttribute("currentUserId");
         String role = (String) request.getAttribute("currentRole");
+        log.info("API请求: PUT /api/spaces/{}, userId={}, systemName={}", systemId, userId, dto.getSystemName());
         permissionService.requireEditPermission(userId, role, systemId);
         return Result.success(spaceService.updateSpace(systemId, dto));
     }
 
     @DeleteMapping("/{systemId}")
     public Result<Void> delete(@PathVariable String systemId, HttpServletRequest request) {
-        permissionService.requireAdmin((String) request.getAttribute("currentRole"));
+        String role = (String) request.getAttribute("currentRole");
+        log.warn("API请求: DELETE /api/spaces/{}, operatorRole={}", systemId, role);
+        permissionService.requireAdmin(role);
         spaceService.deleteSpace(systemId);
         return Result.success(null);
     }

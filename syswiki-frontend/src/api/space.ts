@@ -1,8 +1,8 @@
 import request from './request'
 import type { Space, CreateSpaceForm } from '@/types/space'
 
-export function getSpaceList() {
-  return request.get<Space[]>('/spaces')
+export function getSpaceList(scope: string = 'all') {
+  return request.get<Space[]>('/spaces', { params: { scope } })
 }
 
 export function getSpaceDetail(systemId: string) {
@@ -11,10 +11,6 @@ export function getSpaceDetail(systemId: string) {
 
 export function createSpace(data: CreateSpaceForm) {
   return request.post<Space>('/spaces', data)
-}
-
-export function getMySystems() {
-  return request.get<Space[]>('/spaces/my')
 }
 
 export function updateSpace(systemId: string, data: { systemName?: string; systemCode?: string; description?: string }) {

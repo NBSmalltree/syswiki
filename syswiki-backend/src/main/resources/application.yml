@@ -26,10 +26,27 @@ mybatis-plus:
 
 syswiki:
   jwt:
-    secret: ${JWT_SECRET:SysWikiSecretKey2026ForBankInternalUseMustBe256Bits!!}
-    expiration: 86400000
+    secret: ${JWT_SECRET}
+    expiration: 14400000  # 4小时
+  auth:
+    rate-limit:
+      max-attempts: ${AUTH_RATE_LIMIT_MAX_ATTEMPTS:5}
+      lock-minutes: ${AUTH_RATE_LIMIT_LOCK_MINUTES:15}
   ai:
-    base-url: ${AI_BASE_URL:https://token-plan-cn.xiaomimimo.com/v1}
-    api-key: ${AI_API_KEY:tp-cslz3lhan1f6lr991b1xz42pzuiqspfv1tj1hxwq71hi0wuo}
+    base-url: ${AI_BASE_URL}
+    api-key: ${AI_API_KEY}
     flash-model: ${AI_FLASH_MODEL:mimo-v2.5-pro}
     think-model: ${AI_THINK_MODEL:mimo-v2.5-pro}
+    embedding-model: ${EMBEDDING_MODEL:text-embedding-3-small}
+    embedding-base-url: ${EMBEDDING_BASE_URL:${AI_BASE_URL}}
+    embedding-api-key: ${EMBEDDING_API_KEY:${AI_API_KEY}}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  async:
+    core-pool-size: ${ASYNC_CORE_POOL_SIZE:2}
+    max-pool-size: ${ASYNC_MAX_POOL_SIZE:4}
+    queue-capacity: ${ASYNC_QUEUE_CAPACITY:100}
+    retry-max-attempts: ${ASYNC_RETRY_MAX_ATTEMPTS:3}
+    retry-initial-backoff: ${ASYNC_RETRY_INITIAL_BACKOFF:1000}
+    retry-multiplier: ${ASYNC_RETRY_MULTIPLIER:2.0}
+    retry-max-backoff: ${ASYNC_RETRY_MAX_BACKOFF:10000}

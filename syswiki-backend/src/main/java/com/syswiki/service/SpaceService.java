@@ -8,6 +8,7 @@ import java.util.List;
 
 public interface SpaceService extends IService<SysEncySpace> {
     List<SpaceVO> listActiveSpaces();
+    List<SpaceVO> listUserSpaces(String userId);
     SpaceVO getSpaceDetail(String systemId);
     SpaceVO createSpace(SpaceCreateDTO dto);
     SpaceVO updateSpace(String systemId, SpaceCreateDTO dto);

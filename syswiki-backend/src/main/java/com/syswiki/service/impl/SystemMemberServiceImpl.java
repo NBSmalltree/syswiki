@@ -10,6 +10,7 @@ import com.syswiki.model.entity.SysSystemMember;
 import com.syswiki.model.entity.SysUser;
 import com.syswiki.model.vo.UserVO;
 import com.syswiki.service.SystemMemberService;
+import com.syswiki.util.BeanConverter;
 import com.syswiki.util.IdGenerator;
 import org.springframework.stereotype.Service;
 
@@ -30,14 +31,7 @@ public class SystemMemberServiceImpl extends ServiceImpl<SysSystemMemberMapper, 
         return list(w).stream().map(m -> {
             SysUser u = userMapper.selectById(m.getUserId());
             if (u == null) return null;
-            UserVO vo = new UserVO();
-            vo.setUserId(u.getUserId());
-            vo.setUsername(u.getUsername());
-            vo.setNickname(u.getNickname());
-            vo.setRole(m.getRole()); // 系统角色
-            vo.setStatus(u.getStatus());
-            vo.setCreateTime(u.getCreateTime());
-            return vo;
+            return BeanConverter.toUserVO(u, m.getRole()); // 系统角色覆盖用户全局角色
         }).filter(v -> v != null).collect(Collectors.toList());
     }
 

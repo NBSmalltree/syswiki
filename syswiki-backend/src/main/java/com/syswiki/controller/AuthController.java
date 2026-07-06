@@ -5,6 +5,7 @@ import com.syswiki.model.dto.RegisterDTO;
 import com.syswiki.model.vo.Result;
 import com.syswiki.model.vo.TokenVO;
 import com.syswiki.service.UserService;
+import com.syswiki.util.LoginRateLimiter;
 import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
@@ -14,12 +15,25 @@ import java.util.Map;
 @RequestMapping("/api/auth")
 public class AuthController {
     private final UserService userService;
-    public AuthController(UserService userService) { this.userService = userService; }
+    private final LoginRateLimiter rateLimiter;
+
+    public AuthController(UserService userService, LoginRateLimiter rateLimiter) {
+        this.userService = userService;
+        this.rateLimiter = rateLimiter;
+    }
 
     @PostMapping("/login")
     public Result<TokenVO> login(@RequestBody @Valid LoginDTO dto, HttpServletRequest request) {
         String ip = request.getRemoteAddr();
-        return Result.success(userService.login(dto, ip));
+        rateLimiter.check(ip);
+        try {
+            TokenVO token = userService.login(dto, ip);
+            rateLimiter.clear(ip);
+            return Result.success(token);
+        } catch (Exception e) {
+            rateLimiter.recordFailure(ip);
+            throw e;
+        }
     }
 
     @PostMapping("/register")

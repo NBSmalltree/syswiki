@@ -13,7 +13,8 @@ public enum ErrorCode {
     SQL_RENDER_ERROR(10007, "SQL参数渲染失败"),
     FILE_IMPORT_ERROR(10008, "文件导入失败"),
     AUTH_FAILED(10009, "认证失败"),
-    FORBIDDEN(10010, "无权限");
+    FORBIDDEN(10010, "无权限"),
+    SENSITIVE_WORD_DETECTED(10011, "内容包含敏感信息");
 
     private final int code;
     private final String message;
