@@ -16,7 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,6 +41,19 @@ public class TopologyServiceImpl extends ServiceImpl<SysEncyTopologyMapper, SysE
         LambdaQueryWrapper<SysEncyTopology> w = new LambdaQueryWrapper<>();
         w.eq(SysEncyTopology::getSystemId, systemId);
         remove(w);
+        // 校验：自环和重复链路
+        Set<String> keySet = new HashSet<>();
+        for (TopologySaveDTO dto : links) {
+            if (dto.getFromNode() != null && dto.getToNode() != null &&
+                dto.getFromNode().equals(dto.getToNode())) {
+                throw new BizException(ErrorCode.TOPOLOGY_DATA_ERROR, "起始节点与目标节点不能相同");
+            }
+            String key = dto.getFromNode() + "|" + dto.getToNode() + "|" + dto.getProtocol();
+            if (!keySet.add(key)) {
+                throw new BizException(ErrorCode.TOPOLOGY_DATA_ERROR,
+                    "存在重复的拓扑连接：" + dto.getFromNode() + " → " + dto.getToNode());
+            }
+        }
         List<SysEncyTopology> entities = new ArrayList<>();
         for (int i = 0; i < links.size(); i++) {
             TopologySaveDTO dto = links.get(i);

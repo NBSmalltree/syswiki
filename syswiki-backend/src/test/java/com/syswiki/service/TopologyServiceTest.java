@@ -249,5 +249,40 @@ class TopologyServiceTest {
             // 验证两个 VO 的 linkId 不同
             assertNotEquals(vo1.getLinkId(), vo2.getLinkId());
         }
+
+        @Test
+        @DisplayName("应拒绝自环连接（fromNode == toNode）")
+        void shouldRejectSelfLoop() {
+            TopologySaveDTO dto = new TopologySaveDTO();
+            dto.setFromNode("A");
+            dto.setToNode("A");
+            dto.setProtocol("HTTP");
+
+            doReturn(true).when(topologyService).remove(any());
+
+            BizException ex = assertThrows(BizException.class,
+                    () -> topologyService.batchSave(SYSTEM_ID, List.of(dto)));
+            assertTrue(ex.getMessage().contains("不能相同"));
+        }
+
+        @Test
+        @DisplayName("应拒绝重复链路（相同 fromNode + toNode + protocol）")
+        void shouldRejectDuplicateLink() {
+            TopologySaveDTO dto1 = new TopologySaveDTO();
+            dto1.setFromNode("A");
+            dto1.setToNode("B");
+            dto1.setProtocol("HTTP");
+
+            TopologySaveDTO dto2 = new TopologySaveDTO();
+            dto2.setFromNode("A");
+            dto2.setToNode("B");
+            dto2.setProtocol("HTTP");
+
+            doReturn(true).when(topologyService).remove(any());
+
+            BizException ex = assertThrows(BizException.class,
+                    () -> topologyService.batchSave(SYSTEM_ID, List.of(dto1, dto2)));
+            assertTrue(ex.getMessage().contains("重复"));
+        }
     }
 }
