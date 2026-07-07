@@ -11,7 +11,19 @@
 
     <el-card v-loading="loading">
       <div v-if="links.length" ref="chartRef" style="width:100%;height:500px"></div>
-      <el-empty v-else description="暂无拓扑配置，请在编辑页面导入" />
+      <div v-else class="empty-state">
+        <el-empty description="暂无拓扑配置">
+          <template v-if="canEdit">
+            <p style="color:#909399;margin-top:-12px;margin-bottom:12px">点击下方按钮添加系统间的拓扑连接</p>
+            <el-button type="primary" @click="editingLink = null; showEditorDialog = true">
+              <el-icon><Plus /></el-icon> 新增第一条连接
+            </el-button>
+          </template>
+          <template v-else>
+            <p style="color:#909399;margin-top:-12px">请联系系统管理员添加拓扑配置</p>
+          </template>
+        </el-empty>
+      </div>
     </el-card>
 
     <!-- 详情面板 -->
@@ -24,41 +36,45 @@
 
         <template v-if="outgoingLinks.length">
           <h4 style="margin:0 0 8px;color:#409EFF">出边 ({{ outgoingLinks.length }})</h4>
-          <div v-for="link in outgoingLinks" :key="link.linkId" class="connection-item" @click="switchToEdgeView(link)">
-            <div class="connection-row">
-              <span class="conn-from">{{ link.fromNode }}</span>
-              <el-icon><ArrowRight /></el-icon>
-              <span class="conn-to">{{ link.toNode }}</span>
+          <TransitionGroup name="fade">
+            <div v-for="link in outgoingLinks" :key="link.linkId" class="connection-item" @click="switchToEdgeView(link)">
+              <div class="connection-row">
+                <span class="conn-from">{{ link.fromNode }}</span>
+                <el-icon><ArrowRight /></el-icon>
+                <span class="conn-to">{{ link.toNode }}</span>
+              </div>
+              <div class="conn-meta">
+                <el-tag size="small" :color="protocolColor(link.protocol)" style="color:#fff;border:0">
+                  {{ link.protocol || '未知' }}
+                </el-tag>
+                <span v-if="link.interfaceName" style="margin-left:8px;color:#606266">
+                  {{ link.interfaceName }}
+                </span>
+              </div>
             </div>
-            <div class="conn-meta">
-              <el-tag size="small" :color="protocolColor(link.protocol)" style="color:#fff;border:0">
-                {{ link.protocol || '未知' }}
-              </el-tag>
-              <span v-if="link.interfaceName" style="margin-left:8px;color:#606266">
-                {{ link.interfaceName }}
-              </span>
-            </div>
-          </div>
+          </TransitionGroup>
         </template>
 
         <template v-if="incomingLinks.length">
           <h4 v-if="outgoingLinks.length" style="margin:16px 0 8px;color:#E6A23C">入边 ({{ incomingLinks.length }})</h4>
           <h4 v-else style="margin:0 0 8px;color:#E6A23C">入边 ({{ incomingLinks.length }})</h4>
-          <div v-for="link in incomingLinks" :key="link.linkId" class="connection-item" @click="switchToEdgeView(link)">
-            <div class="connection-row">
-              <span class="conn-from">{{ link.fromNode }}</span>
-              <el-icon><ArrowRight /></el-icon>
-              <span class="conn-to">{{ link.toNode }}</span>
+          <TransitionGroup name="fade">
+            <div v-for="link in incomingLinks" :key="link.linkId" class="connection-item" @click="switchToEdgeView(link)">
+              <div class="connection-row">
+                <span class="conn-from">{{ link.fromNode }}</span>
+                <el-icon><ArrowRight /></el-icon>
+                <span class="conn-to">{{ link.toNode }}</span>
+              </div>
+              <div class="conn-meta">
+                <el-tag size="small" :color="protocolColor(link.protocol)" style="color:#fff;border:0">
+                  {{ link.protocol || '未知' }}
+                </el-tag>
+                <span v-if="link.interfaceName" style="margin-left:8px;color:#606266">
+                  {{ link.interfaceName }}
+                </span>
+              </div>
             </div>
-            <div class="conn-meta">
-              <el-tag size="small" :color="protocolColor(link.protocol)" style="color:#fff;border:0">
-                {{ link.protocol || '未知' }}
-              </el-tag>
-              <span v-if="link.interfaceName" style="margin-left:8px;color:#606266">
-                {{ link.interfaceName }}
-              </span>
-            </div>
-          </div>
+          </TransitionGroup>
         </template>
 
         <el-empty v-if="!outgoingLinks.length && !incomingLinks.length" description="该节点没有关联连接" />
@@ -349,13 +365,19 @@ onUnmounted(() => {
   display: flex;
   gap: 8px;
 }
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
 .connection-item {
   padding: 10px 12px;
   border: 1px solid #e4e7ed;
   border-radius: 6px;
   margin-bottom: 8px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, border-color 0.2s;
 }
 .connection-item:hover {
   background: #f5f7fa;
@@ -375,5 +397,19 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   margin-top: 6px;
+}
+
+/* 列表项淡出动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.fade-enter-from {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+.fade-leave-to {
+  opacity: 0;
+  transform: translateX(20px);
 }
 </style>
