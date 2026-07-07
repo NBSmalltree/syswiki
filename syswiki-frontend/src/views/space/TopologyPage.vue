@@ -164,7 +164,7 @@ function protocolColor(protocol: string): string {
   return PROTOCOL_COLORS[protocol?.toUpperCase()] || DEFAULT_COLOR
 }
 
-onMounted(async () => {
+  onMounted(async () => {
   loading.value = true
   try {
     await fetchPermission(systemId.value)
@@ -178,15 +178,11 @@ onMounted(async () => {
   loading.value = false
 })
 
-function renderChart() {
-  if (!chartRef.value) return
-  chart.value = echarts.init(chartRef.value)
-
+function buildChartOption(): echarts.EChartsOption {
   const nodeSet = new Set<string>()
   links.value.forEach(l => { nodeSet.add(l.fromNode); nodeSet.add(l.toNode) })
   const nodes = Array.from(nodeSet).map(n => ({ name: n, symbolSize: 40 }))
 
-  // 收集出现的协议类型用于 legend
   const protocolTypes = new Set<string>()
   links.value.forEach(l => {
     if (l.protocol) protocolTypes.add(l.protocol.toUpperCase())
@@ -196,10 +192,7 @@ function renderChart() {
     source: l.fromNode,
     target: l.toNode,
     protocol: l.protocol || '',
-    lineStyle: {
-      color: protocolColor(l.protocol),
-      width: 2
-    },
+    lineStyle: { color: protocolColor(l.protocol), width: 2 },
     label: {
       show: !!(l.protocol || l.interfaceName),
       formatter: l.protocol || l.interfaceName || '',
@@ -208,24 +201,18 @@ function renderChart() {
     value: l.interfaceName || ''
   }))
 
-  const option: echarts.EChartsOption = {
-    // 协议图例
+  return {
     legend: {
       data: Array.from(protocolTypes).filter(Boolean).map(p => ({
-        name: p,
-        itemStyle: { color: protocolColor(p) }
+        name: p, itemStyle: { color: protocolColor(p) }
       })),
-      bottom: 0,
-      left: 'center',
-      icon: 'circle',
+      bottom: 0, left: 'center', icon: 'circle',
       textStyle: { fontSize: 12 }
     },
     tooltip: {
       trigger: 'item',
       formatter: (params: any) => {
-        if (params.dataType === 'node') {
-          return `<b>${params.name}</b>`
-        }
+        if (params.dataType === 'node') return `<b>${params.name}</b>`
         if (params.dataType === 'edge') {
           const p = params.data.protocol || ''
           const iface = params.data.value || ''
@@ -237,29 +224,22 @@ function renderChart() {
       }
     },
     series: [{
-      type: 'graph',
-      layout: 'force',
-      roam: true,
-      draggable: true,
+      type: 'graph', layout: 'force', roam: true, draggable: true,
       force: { repulsion: 200, edgeLength: 150 },
-      data: nodes,
-      links: edges,
+      data: nodes, links: edges,
       label: { show: true, position: 'bottom' },
       lineStyle: { curveness: 0.2, width: 2 },
-      // 边的高亮样式
-      emphasis: {
-        lineStyle: {
-          width: 4,
-          opacity: 0.9
-        }
-      },
-      // 节点悬浮动画
+      emphasis: { lineStyle: { width: 4, opacity: 0.9 } },
       focusNodeAdjacency: false
     }]
   }
-  chart.value.setOption(option)
+}
 
-  // 节点点击：列出关联连接
+function renderChart() {
+  if (!chartRef.value) return
+  chart.value = echarts.init(chartRef.value)
+  chart.value.setOption(buildChartOption())
+
   chart.value.on('click', (params: any) => {
     if (params.dataType === 'node') {
       selectedNode.value = params.name
@@ -270,14 +250,22 @@ function renderChart() {
     if (params.dataType === 'edge') {
       const link = links.value.find(l =>
         l.fromNode === params.data.source && l.toNode === params.data.target)
-      if (link) {
-        switchToEdgeView(link)
-      }
+      if (link) switchToEdgeView(link)
     }
   })
 
   handleResize = () => chart.value?.resize()
   window.addEventListener('resize', handleResize)
+}
+
+// 增量刷新图表（不销毁 ECharts 实例）
+async function refreshChart() {
+  if (!chart.value) {
+    await nextTick()
+    renderChart()
+    return
+  }
+  chart.value.setOption(buildChartOption(), { notMerge: false })
 }
 
 function switchToEdgeView(link: TopologyLink) {
