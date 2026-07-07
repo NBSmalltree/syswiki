@@ -3,7 +3,7 @@
     <div class="page-header">
       <h3>黄金链路拓扑</h3>
       <div v-if="canEdit" class="header-actions">
-        <el-button type="primary" size="small" @click="showAddDialog = true">
+        <el-button type="primary" size="small" @click="editingLink = null; showEditorDialog = true">
           <el-icon><Plus /></el-icon> 新增连接
         </el-button>
       </div>
@@ -80,6 +80,7 @@
             </el-descriptions>
 
             <div v-if="canEdit" style="margin-top:16px;text-align:right">
+              <el-button type="primary" size="small" @click="openEditor(selectedLink)">编辑</el-button>
               <el-popconfirm title="确定删除该连接？" @confirm="handleDeleteLink(selectedLink.linkId)">
                 <template #reference>
                   <el-button type="danger" size="small">删除连接</el-button>
@@ -96,37 +97,13 @@
       </template>
     </el-drawer>
 
-    <!-- 新增连接弹窗 -->
-    <el-dialog v-model="showAddDialog" title="新增拓扑连接" width="600px" :close-on-click-modal="false">
-      <el-form :model="addForm" label-width="100px">
-        <el-form-item label="起始节点" required>
-          <el-input v-model="addForm.fromNode" placeholder="例如：核心路由网关" />
-        </el-form-item>
-        <el-form-item label="目标节点" required>
-          <el-input v-model="addForm.toNode" placeholder="例如：跨境支付系统" />
-        </el-form-item>
-        <el-form-item label="通信协议">
-          <el-select v-model="addForm.protocol" placeholder="选择协议" style="width:100%">
-            <el-option label="HTTP" value="HTTP" />
-            <el-option label="HTTPS" value="HTTPS" />
-            <el-option label="TCP" value="TCP" />
-            <el-option label="RPC" value="RPC" />
-            <el-option label="MQ" value="MQ" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="接口名称">
-          <el-input v-model="addForm.interfaceName" placeholder="例如：transQuery" />
-        </el-form-item>
-        <el-form-item label="接口详情">
-          <el-input v-model="addForm.interfaceDetails" type="textarea" :rows="6"
-                    placeholder="输入接口的请求/响应报文定义（支持 Markdown）" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showAddDialog = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="handleAddLink">添加</el-button>
-      </template>
-    </el-dialog>
+    <!-- 编辑/新增连接弹窗 -->
+    <TopologyEditorDialog
+      v-model="showEditorDialog"
+      :link="editingLink"
+      ref="editorRef"
+      @save="handleEditorSave"
+    />
   </div>
 </template>
 
@@ -137,6 +114,7 @@ import { ElMessage } from 'element-plus'
 import { getTopologyList, batchSaveTopology, deleteTopology } from '@/api/topology'
 import { usePermission } from '@/composables/usePermission'
 import MarkdownViewer from '@/components/common/MarkdownViewer.vue'
+import TopologyEditorDialog from '@/components/topology/TopologyEditorDialog.vue'
 import type { TopologyLink } from '@/types/topology'
 import * as echarts from 'echarts'
 import { Plus, ArrowRight } from '@element-plus/icons-vue'
@@ -167,16 +145,10 @@ const outgoingLinks = computed(() =>
 const incomingLinks = computed(() =>
   links.value.filter(l => l.toNode === selectedNode.value))
 
-// 新增连接
-const showAddDialog = ref(false)
-const saving = ref(false)
-const addForm = ref({
-  fromNode: '',
-  toNode: '',
-  protocol: '',
-  interfaceName: '',
-  interfaceDetails: ''
-})
+// 编辑弹窗
+const showEditorDialog = ref(false)
+const editingLink = ref<TopologyLink | null>(null)
+const editorRef = ref<InstanceType<typeof TopologyEditorDialog>>()
 
 // 协议颜色映射
 const PROTOCOL_COLORS: Record<string, string> = {
@@ -316,41 +288,39 @@ function switchToEdgeView(link: TopologyLink) {
   drawerVisible.value = true
 }
 
-async function handleAddLink() {
-  if (!addForm.value.fromNode || !addForm.value.toNode) {
-    ElMessage.warning('请填写起始节点和目标节点')
-    return
-  }
-  saving.value = true
+async function handleEditorSave(data: {
+  fromNode: string; toNode: string; protocol: string
+  interfaceName: string; interfaceDetails: string
+}) {
+  editorRef.value?.setSaving(true)
   try {
-    // 添加新连接到现有列表，保持原有连接
-    const updatedLinks = [
-      ...links.value.map(l => ({
-        fromNode: l.fromNode,
-        toNode: l.toNode,
-        protocol: l.protocol,
-        interfaceName: l.interfaceName,
-        interfaceDetails: l.interfaceDetails
-      })),
-      {
-        fromNode: addForm.value.fromNode,
-        toNode: addForm.value.toNode,
-        protocol: addForm.value.protocol,
-        interfaceName: addForm.value.interfaceName,
-        interfaceDetails: addForm.value.interfaceDetails
+    const updatedLinks = links.value.map(l => ({
+      fromNode: l.fromNode, toNode: l.toNode,
+      protocol: l.protocol, interfaceName: l.interfaceName,
+      interfaceDetails: l.interfaceDetails
+    }))
+
+    if (!editingLink.value) {
+      // 新增
+      updatedLinks.push(data)
+    } else {
+      // 编辑：替换已有连接
+      const idx = updatedLinks.findIndex(_ =>
+        _.fromNode === editingLink.value!.fromNode && _.toNode === editingLink.value!.toNode
+      )
+      if (idx >= 0) {
+        updatedLinks[idx] = data
       }
-    ]
+    }
+
     const res = await batchSaveTopology(systemId.value, updatedLinks)
     links.value = res.data || []
-    showAddDialog.value = false
-    addForm.value = { fromNode: '', toNode: '', protocol: '', interfaceName: '', interfaceDetails: '' }
-    ElMessage.success('连接添加成功')
-    await nextTick()
-    chart.value?.dispose()
-    chart.value = null
-    renderChart()
+    showEditorDialog.value = false
+    editingLink.value = null
+    ElMessage.success(editingLink.value ? '连接已更新' : '连接添加成功')
+    refreshChart()
   } catch { /* handled */ }
-  saving.value = false
+  editorRef.value?.setSaving(false)
 }
 
 async function handleDeleteLink(linkId: string) {
@@ -359,12 +329,7 @@ async function handleDeleteLink(linkId: string) {
     links.value = links.value.filter(l => l.linkId !== linkId)
     drawerVisible.value = false
     ElMessage.success('连接已删除')
-    chart.value?.dispose()
-    chart.value = null
-    if (links.value.length) {
-      await nextTick()
-      renderChart()
-    }
+    refreshChart()
   } catch { /* handled */ }
 }
 
