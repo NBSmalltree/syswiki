@@ -40,4 +40,13 @@ public class TopologyController {
         topologyService.deleteTopology(systemId, linkId);
         return Result.success(null);
     }
+
+    @PutMapping("/{linkId}")
+    public Result<TopologyVO> update(@PathVariable String systemId, @PathVariable String linkId,
+                                     @RequestBody @Valid TopologySaveDTO dto, HttpServletRequest request) {
+        String userId = (String) request.getAttribute("currentUserId");
+        String role = (String) request.getAttribute("currentRole");
+        permissionService.requireEditPermission(userId, role, systemId);
+        return Result.success(topologyService.updateTopology(systemId, linkId, dto));
+    }
 }

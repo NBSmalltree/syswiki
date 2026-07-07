@@ -9,5 +9,6 @@ import java.util.List;
 public interface TopologyService extends IService<SysEncyTopology> {
     List<TopologyVO> listTopologies(String systemId);
     List<TopologyVO> batchSave(String systemId, List<TopologySaveDTO> links);
+    TopologyVO updateTopology(String systemId, String linkId, TopologySaveDTO dto);
     void deleteTopology(String systemId, String linkId);
 }

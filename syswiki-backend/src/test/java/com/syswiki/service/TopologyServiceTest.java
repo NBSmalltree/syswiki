@@ -54,6 +54,64 @@ class TopologyServiceTest {
     }
 
     @Nested
+    @DisplayName("updateTopology() 方法")
+    class UpdateTopology {
+
+        @Test
+        @DisplayName("拓扑存在且属于目标系统时，应更新成功")
+        void shouldUpdateWhenExistsAndBelongsToSystem() {
+            SysEncyTopology existing = new SysEncyTopology();
+            existing.setLinkId(LINK_ID);
+            existing.setSystemId(SYSTEM_ID);
+            existing.setFromNode("A");
+            existing.setToNode("B");
+            existing.setProtocol("HTTP");
+            doReturn(existing).when(topologyService).getById(LINK_ID);
+            doReturn(true).when(topologyService).updateById(any());
+
+            TopologySaveDTO dto = new TopologySaveDTO();
+            dto.setFromNode("A");
+            dto.setToNode("C");
+            dto.setProtocol("MQ");
+            dto.setInterfaceName("notify");
+            dto.setInterfaceDetails("updated");
+
+            TopologyVO result = topologyService.updateTopology(SYSTEM_ID, LINK_ID, dto);
+
+            assertEquals("C", result.getToNode());
+            assertEquals("MQ", result.getProtocol());
+            assertEquals("notify", result.getInterfaceName());
+            assertEquals("updated", result.getInterfaceDetails());
+        }
+
+        @Test
+        @DisplayName("拓扑不存在时，应抛出 NOT_FOUND 异常")
+        void shouldThrowWhenNotFound() {
+            doReturn(null).when(topologyService).getById(LINK_ID);
+            TopologySaveDTO dto = new TopologySaveDTO();
+            dto.setFromNode("A"); dto.setToNode("B");
+
+            assertThrows(BizException.class,
+                    () -> topologyService.updateTopology(SYSTEM_ID, LINK_ID, dto));
+        }
+
+        @Test
+        @DisplayName("应拒绝自环更新")
+        void shouldRejectSelfLoop() {
+            SysEncyTopology existing = new SysEncyTopology();
+            existing.setLinkId(LINK_ID);
+            existing.setSystemId(SYSTEM_ID);
+            doReturn(existing).when(topologyService).getById(LINK_ID);
+
+            TopologySaveDTO dto = new TopologySaveDTO();
+            dto.setFromNode("A"); dto.setToNode("A");
+
+            assertThrows(BizException.class,
+                    () -> topologyService.updateTopology(SYSTEM_ID, LINK_ID, dto));
+        }
+    }
+
+    @Nested
     @DisplayName("deleteTopology() 方法")
     class DeleteTopology {
 

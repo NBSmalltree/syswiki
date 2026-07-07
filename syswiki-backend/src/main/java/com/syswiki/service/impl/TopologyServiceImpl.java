@@ -81,6 +81,23 @@ public class TopologyServiceImpl extends ServiceImpl<SysEncyTopologyMapper, SysE
         removeById(linkId);
     }
 
+    @Override
+    public TopologyVO updateTopology(String systemId, String linkId, TopologySaveDTO dto) {
+        SysEncyTopology e = getById(linkId);
+        if (e == null || !e.getSystemId().equals(systemId)) throw new BizException(ErrorCode.NOT_FOUND, "拓扑链路不存在");
+        if (dto.getFromNode() != null && dto.getToNode() != null && dto.getFromNode().equals(dto.getToNode())) {
+            throw new BizException(ErrorCode.TOPOLOGY_DATA_ERROR, "起始节点与目标节点不能相同");
+        }
+        e.setFromNode(dto.getFromNode());
+        e.setToNode(dto.getToNode());
+        e.setProtocol(dto.getProtocol());
+        e.setInterfaceName(dto.getInterfaceName());
+        e.setInterfaceDetails(dto.getInterfaceDetails());
+        e.setUpdateTime(LocalDateTime.now());
+        updateById(e);
+        return toVO(e);
+    }
+
     private TopologyVO toVO(SysEncyTopology e) {
         TopologyVO vo = new TopologyVO();
         vo.setLinkId(e.getLinkId());
